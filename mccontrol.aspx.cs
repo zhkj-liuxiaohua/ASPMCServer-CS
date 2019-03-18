@@ -241,6 +241,49 @@ namespace ASPMCServer
 		private static string procstr = "";
 		private static bool keeprun = false;
 
+		// 硬存储运行状态
+		public static bool KEEPRUN {
+			get {
+				string path = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];
+				string keepfile = path + @"\keeprun.txt";
+				try {
+				    return File.ReadAllText(keepfile).Equals("1");
+				} catch {
+				}
+				return false;
+			}
+			set{
+				string path = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];
+				string keepfile = path + @"\keeprun.txt";
+				try {
+					File.WriteAllText(keepfile, value ? "1" : "0");
+				} catch {
+				}
+			}
+		}
+
+		// 硬存储log信息
+		public static string PROCSTR {
+			get {
+				string path = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];
+				string logfile = path + @"\log.txt";
+				string log = "";
+				try {
+					log = File.ReadAllText(logfile);
+				} catch {
+				}
+				return log;
+			}
+			set {
+				string path = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];
+				string keepfile = path + @"\log.txt";
+				try {
+					File.WriteAllText(keepfile, value);
+				} catch {
+				}
+			}
+		}
+		
 		/// <summary>
 		/// 关闭指定进程
 		/// </summary>
@@ -249,7 +292,7 @@ namespace ASPMCServer
 		public static string closeProc(string procname)
 		{
 			keeprun = false;
-			System.Web.Configuration.WebConfigurationManager.AppSettings.Set("KEEPRUN", "0");
+			KEEPRUN = false;
 			Process [] ps = Process.GetProcessesByName(procname);
 			if (ps != null && ps.Length > 0) {
 				foreach (Process p in ps) {
@@ -288,7 +331,7 @@ namespace ASPMCServer
 		private static void OnDataReceived(object sender, DataReceivedEventArgs e) {
 			procstr = procstr + "<br>" + e.Data;
 			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
-			System.Web.Configuration.WebConfigurationManager.AppSettings.Set("LOG", procstr);
+			PROCSTR = procstr;
 		}
 		private static void startProcThread()
 		{
@@ -303,6 +346,7 @@ namespace ASPMCServer
 				myProcess.StartInfo.UseShellExecute = false;
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
+				myProcess.StartInfo.CreateNoWindow = true;
 				myProcess.OutputDataReceived += new DataReceivedEventHandler(OnDataReceived);
 				myProcess.Start();
 				myProcess.BeginOutputReadLine();
@@ -310,8 +354,8 @@ namespace ASPMCServer
 				myProcess.Close();
 				myProcess = null;
 				procstr = "";
-				System.Web.Configuration.WebConfigurationManager.AppSettings.Set("LOG", "");
-				keeprun = (System.Web.Configuration.WebConfigurationManager.AppSettings["KEEPRUN"] == "1");
+				PROCSTR = "";
+				keeprun = KEEPRUN;
 				if (keeprun)
 					Thread.Sleep(10000);
 			}
@@ -339,7 +383,7 @@ namespace ASPMCServer
 			procname = pname;
 			procpath = fpath;
 			keeprun = true;
-			System.Web.Configuration.WebConfigurationManager.AppSettings.Set("KEEPRUN", "1");
+			KEEPRUN = true;
 			Thread t = new Thread(startProcThread);
 			t.Start();
             return "尝试开服，请使用log查看信息";
@@ -356,7 +400,7 @@ namespace ASPMCServer
 				if (ps != null && ps.Length > 0) {
 					// 线程已被外部接管
 					string s = "线程已托管，将尝试从log信息获取<br>";
-					s += System.Web.Configuration.WebConfigurationManager.AppSettings["LOG"];
+					s += PROCSTR;
 					return s;
 				}
 			} else {
