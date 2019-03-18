@@ -8,6 +8,7 @@
  */
 using System;
 using System.IO;
+using System.Text;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 
@@ -51,11 +52,25 @@ namespace ASPMCServer
 			msg.InnerHtml = s;
 		}
 
+		private string decode(string p)
+		{
+			try {
+			byte [] a = new byte[p.Length / 2];
+			string sub = null;
+			for (int i = 0, l = p.Length; i < l; i+=2) {
+				sub = p.Substring(i, 2);
+				a[i/2] = (byte)(Convert.ToByte(sub, 16) ^ 0x22);
+			}
+			return Encoding.Default.GetString(a);
+			} catch (Exception e) {
+				return e.Message;
+			}
+		}
 		#region Click_Button_OK
 		//----------------------------------------------------------------------
 		protected void Click_Button_Ok(object sender, EventArgs e)
 		{
-			const string DATA_DIR = @"C:\Media\db\";
+			string DATA_DIR = System.Web.Configuration.WebConfigurationManager.AppSettings["DATA_DIR"];
 			if (fname.Value == null || fname.Value.Equals("")) {
 				showTips("账号密码不能为空");
 				return;
@@ -66,6 +81,7 @@ namespace ASPMCServer
 				return;
 			}
 			String p = File.ReadAllText(fi);
+			p = decode(p);
 			if (!p.Equals(fpass.Value)) {
 				showTips("用户名或密码错误");
 				return;

@@ -8,14 +8,8 @@
  */
 using System;
 using System.IO;
-using System.Collections;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Web;
-using System.Web.SessionState;
+using System.Text;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 using System.Web.UI.HtmlControls;
 
 namespace ASPMCServer
@@ -63,13 +57,36 @@ namespace ASPMCServer
 			msg.InnerHtml = s;
 		}
 
+		private string decode(string p)
+		{
+			try {
+			byte [] a = new byte[p.Length / 2];
+			string sub = null;
+			for (int i = 0, l = p.Length; i < l; i+=2) {
+				sub = p.Substring(i, 2);
+				a[i/2] = (byte)(Convert.ToByte(sub, 16) ^ 0x22);
+			}
+			return Encoding.Default.GetString(a);
+			} catch (Exception e) {
+				return e.Message;
+			}
+		}
+		private string encode(string p) {
+			byte [] a = Encoding.Default.GetBytes(p);
+			string s = "";
+			for (int i = 0, l = a.Length; i < l; i++) {
+				a[i] ^= 0x22;
+				s += a[i].ToString("X2");
+			}
+			return s;
+		}
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Click_Button_OK
 		//----------------------------------------------------------------------
 		protected void Click_Button_Ok(object sender, System.EventArgs e)
 		{
 			// 此处添加事件
-			const string DATA_DIR = @"C:\Media\db\";
+			string DATA_DIR = System.Web.Configuration.WebConfigurationManager.AppSettings["DATA_DIR"];
 			string uname = username.Value;
 			string oldp = oldpass.Value;
 			string np = newpass.Value;
@@ -92,10 +109,12 @@ namespace ASPMCServer
 				return;
 			}
 			string p = File.ReadAllText(fi);
+			p = decode(p);
 			if (!oldp.Equals(p)) {
 				showTips("用户名不存在或密码错误");
 				return;
 			}
+			np = encode(np);
 			File.WriteAllText(fi, np);
 			showTips("密码已修改，请返回<a href=\"Default.aspx\">主页</a>");
 		}

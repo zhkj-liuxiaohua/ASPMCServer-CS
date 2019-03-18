@@ -18,7 +18,7 @@
 <form runat="server">
 <p>信息框：<a id="welcome" runat="server"></a>
 <input runat="server" id="logout" type="button" value="退出登录" style="right: 2vmin; position: absolute;" /></p>
-<div runat="server" id="msg" style="border-style: double; height: 48vh"></div>
+<div runat="server" id="msg" style="border-style: double; height: 48vh; overflow: scroll;"></div>
 
 <p>添加白名单：<asp:TextBox runat="server" id="whitetext"></asp:TextBox>
 <asp:Button runat="server" Text="添加" id="btwhite"></asp:Button>

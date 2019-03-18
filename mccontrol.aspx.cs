@@ -8,15 +8,9 @@
  */
 using System;
 using System.IO;
-using System.Collections;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Web;
-using System.Web.SessionState;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Web.UI.HtmlControls;
@@ -35,6 +29,12 @@ namespace ASPMCServer
 //		protected Button btwhite, btblack, showmc, btcmd, shutdown, StartServer;
 //		protected	TextBox		whitetext, blacktext, cmdtext;
 //		protected HtmlGenericControl msg, welcome;
+		
+		public string BACKUPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["BACKUPDIR"];
+		public string MAPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["MAPDIR"];
+		public string FTPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["FTPDIR"];
+		public string PROCNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCNAME"];
+		public string PROCPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCPATH"];
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Page Init & Exit (Open/Close DB connections here...)
@@ -82,18 +82,18 @@ namespace ASPMCServer
 		// 显示备份目录
 		protected void showbackupClick(object sender, System.EventArgs e)
 		{
-			if (!Directory.Exists(config.BACKUPDIR)) {
+			if (!Directory.Exists(BACKUPDIR)) {
 				secAddTxt("备份目录不存在或无权访问。");
 				return;
 			}
 			string x = "";
-			string [] ds = Directory.GetDirectories(config.BACKUPDIR);
+			string [] ds = Directory.GetDirectories(BACKUPDIR);
 			if (ds != null && ds.Length > 0) {
 				foreach (string s in ds) {
 					x += ("\t" + s);
 				}
 			}
-			string [] fs = Directory.GetFiles(config.BACKUPDIR);
+			string [] fs = Directory.GetFiles(BACKUPDIR);
 			if (fs != null && fs.Length > 0) {
 				foreach (string s in fs) {
 					x += ("\t" + s);
@@ -106,7 +106,12 @@ namespace ASPMCServer
 		// 清理备份目录至最近10个
 		protected void clearbackupClick(object sender, System.EventArgs e)
 		{
-			string [] ds = Directory.GetDirectories(config.BACKUPDIR);
+			
+			if (!Directory.Exists(BACKUPDIR)) {
+				secAddTxt("备份目录不存在或无权访问。");
+				return;
+			}
+			string [] ds = Directory.GetDirectories(BACKUPDIR);
 			if (ds != null && ds.Length > 10) {
 				for (int i = 0; i < ds.Length - 10; i++) {
 					if (Directory.Exists(ds[i])) {
@@ -122,14 +127,14 @@ namespace ASPMCServer
 		// 备份当前地图至ftp目录
 		protected void cpmapClick(object sender, System.EventArgs e)
 		{
-			if (Directory.Exists(config.MAPDIR) && Directory.Exists(config.FTPDIR)) {
-				DirectoryInfo i = new DirectoryInfo(config.MAPDIR);
-				string ddir = config.FTPDIR + @"\" + i.Name;
+			if (Directory.Exists(MAPDIR) && Directory.Exists(FTPDIR)) {
+				DirectoryInfo i = new DirectoryInfo(MAPDIR);
+				string ddir = FTPDIR + @"\" + i.Name;
 				if (Directory.Exists(ddir)) {
 					Directory.Delete(ddir, true);
 				}
 				secAddTxt("开始复制地图到ftp，详情请查看ftp路径。");
-				system("xcopy " + "\"" + config.MAPDIR + "\"" + " \"" +
+				system("xcopy " + "\"" + MAPDIR + "\"" + " \"" +
 				       ddir + "\" /e/q/h/i");
 			}
 		}
@@ -142,17 +147,17 @@ namespace ASPMCServer
 		// 显示后台
 		void ShowmcClick(object sender, EventArgs e)
 		{
-			secAddTxt(MCWinControl.getStrFromProc(config.PROCNAME));
+			secAddTxt(MCWinControl.getStrFromProc(PROCNAME));
 		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
 		{
-			secAddTxt(MCWinControl.closeProc(config.PROCNAME));
+			secAddTxt(MCWinControl.closeProc(PROCNAME));
 		}
 		// 启动服务端
 		void StartServerClick(object sender, EventArgs e)
 		{
-			secAddTxt(MCWinControl.StartProc(config.PROCNAME, config.PROCPATH));
+			secAddTxt(MCWinControl.StartProc(PROCNAME, PROCPATH));
 		}
 		// 发送消息
 		void BtcmdClick(object sender, EventArgs e)
@@ -163,7 +168,7 @@ namespace ASPMCServer
 				return;
 			}
 			cmdtext.Text = "";
-			secAddTxt(MCWinControl.sendCommand(config.PROCNAME, cmd));
+			secAddTxt(MCWinControl.sendCommand(PROCNAME, cmd));
 		}
 		// 添加白名单
 		void BtwhiteClick(object sender, EventArgs e)
@@ -174,7 +179,7 @@ namespace ASPMCServer
 				return;
 			}
 			whitetext.Text = "";
-			secAddTxt(MCWinControl.sendCommand(config.PROCNAME, "whitelist add \"" + uname + "\""));
+			secAddTxt(MCWinControl.sendCommand(PROCNAME, "whitelist add \"" + uname + "\""));
 		}
 		// 移除白名单
 		void BtblackClick(object sender, EventArgs e)
@@ -185,7 +190,7 @@ namespace ASPMCServer
 				return;
 			}
 			blacktext.Text = "";
-			secAddTxt(MCWinControl.sendCommand(config.PROCNAME, "whitelist remove \"" + uname + "\""));
+			secAddTxt(MCWinControl.sendCommand(PROCNAME, "whitelist remove \"" + uname + "\""));
 		}
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -244,6 +249,7 @@ namespace ASPMCServer
 		public static string closeProc(string procname)
 		{
 			keeprun = false;
+			System.Web.Configuration.WebConfigurationManager.AppSettings.Set("KEEPRUN", "0");
 			Process [] ps = Process.GetProcessesByName(procname);
 			if (ps != null && ps.Length > 0) {
 				foreach (Process p in ps) {
@@ -281,11 +287,17 @@ namespace ASPMCServer
 		
 		private static void OnDataReceived(object sender, DataReceivedEventArgs e) {
 			procstr = procstr + "<br>" + e.Data;
+			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
+			System.Web.Configuration.WebConfigurationManager.AppSettings.Set("LOG", procstr);
 		}
 		private static void startProcThread()
 		{
 			while (keeprun) {
 				procstr = "";
+				if (findedProcName(procname)) {
+					// 已存在实例
+					return;
+				}
 				myProcess = new Process();
 				myProcess.StartInfo.FileName = procpath;//控制台程序的路径
 				myProcess.StartInfo.UseShellExecute = false;
@@ -298,6 +310,8 @@ namespace ASPMCServer
 				myProcess.Close();
 				myProcess = null;
 				procstr = "";
+				System.Web.Configuration.WebConfigurationManager.AppSettings.Set("LOG", "");
+				keeprun = (System.Web.Configuration.WebConfigurationManager.AppSettings["KEEPRUN"] == "1");
 				if (keeprun)
 					Thread.Sleep(10000);
 			}
@@ -325,6 +339,7 @@ namespace ASPMCServer
 			procname = pname;
 			procpath = fpath;
 			keeprun = true;
+			System.Web.Configuration.WebConfigurationManager.AppSettings.Set("KEEPRUN", "1");
 			Thread t = new Thread(startProcThread);
 			t.Start();
             return "尝试开服，请使用log查看信息";
@@ -339,13 +354,10 @@ namespace ASPMCServer
 			if (myProcess == null) {
 				Process [] ps = Process.GetProcessesByName(procname);
 				if (ps != null && ps.Length > 0) {
-					string s = null;
-						try {
-						s = ps[0].StandardOutput.ReadToEnd();
-						} catch (Exception e) {
-							return "无法接管：" + e.Message;
-						}
-						return s;
+					// 线程已被外部接管
+					string s = "线程已托管，将尝试从log信息获取<br>";
+					s += System.Web.Configuration.WebConfigurationManager.AppSettings["LOG"];
+					return s;
 				}
 			} else {
 				return procstr;
@@ -412,25 +424,4 @@ namespace ASPMCServer
          );
 	}
 	
-	
-	/// <summary>
-	/// 配置文件
-	/// </summary>
-	class config
-	{
-		public config()
-		{
-		}
-		
-		// TODO 进程名
-		public const string PROCNAME = "bedrock_server";
-		// TODO 应用进程绝对路径
-		public const string PROCPATH = @"D:\Games\mcpe-server\bedrock-server\bedrock_server.exe";
-		// TODO 备份目录文件夹
-		public const string BACKUPDIR = @"C:\backup";
-		// TODO MC地图文件夹
-		public const string MAPDIR = @"D:\Games\mcpe-server\bedrock-server\worlds\newworld";
-		// TODO ftp所在目录文件夹
-		public const string FTPDIR = @"C:\Media";
-	}
 }
