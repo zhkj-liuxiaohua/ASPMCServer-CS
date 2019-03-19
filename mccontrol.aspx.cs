@@ -34,8 +34,8 @@ namespace ASPMCServer
 		public string BACKUPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["BACKUPDIR"];
 		public string MAPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["MAPDIR"];
 		public string FTPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["FTPDIR"];
-		public string PROCNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCNAME"];
-		public string PROCPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCPATH"];
+		public static string LAUNCHERNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["LAUNCHERNAME"];
+		public static string LAUNCHERPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LAUNCHERPATH"];
 		
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -149,17 +149,17 @@ namespace ASPMCServer
 		// 显示后台
 		void ShowmcClick(object sender, EventArgs e)
 		{
-			secAddTxt(MCWinControl.getStrFromProc(PROCNAME));
+			secAddTxt(MCWinControl.getStrFromProc(LAUNCHERNAME));
 		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
 		{
-			secAddTxt(MCWinControl.closeProc(PROCNAME));
+			secAddTxt(MCWinControl.closeProc(LAUNCHERNAME));
 		}
 		// 启动服务端
 		void StartServerClick(object sender, EventArgs e)
 		{
-			secAddTxt(MCWinControl.StartProc(PROCNAME, PROCPATH));
+			secAddTxt(MCWinControl.StartProc(LAUNCHERNAME, LAUNCHERPATH));
 		}
 		// 发送消息
 		void BtcmdClick(object sender, EventArgs e)
@@ -170,7 +170,7 @@ namespace ASPMCServer
 				return;
 			}
 			cmdtext.Text = "";
-			secAddTxt(MCWinControl.sendCommand(PROCNAME, cmd));
+			secAddTxt(MCWinControl.postLongCmd(LAUNCHERNAME, cmd));
 		}
 		// 添加白名单
 		void BtwhiteClick(object sender, EventArgs e)
@@ -181,7 +181,7 @@ namespace ASPMCServer
 				return;
 			}
 			whitetext.Text = "";
-			secAddTxt(MCWinControl.sendCommand(PROCNAME, "whitelist add \"" + uname + "\""));
+			secAddTxt(MCWinControl.postLongCmd(LAUNCHERNAME, "whitelist add \"" + uname + "\""));
 		}
 		// 移除白名单
 		void BtblackClick(object sender, EventArgs e)
@@ -192,7 +192,7 @@ namespace ASPMCServer
 				return;
 			}
 			blacktext.Text = "";
-			secAddTxt(MCWinControl.sendCommand(PROCNAME, "whitelist remove \"" + uname + "\""));
+			secAddTxt(MCWinControl.postLongCmd(LAUNCHERNAME, "whitelist remove \"" + uname + "\""));
 		}
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -240,10 +240,11 @@ namespace ASPMCServer
 		private static Process myProcess = null;
 		private static string procname = null;
 		private static string procpath = null;
-		private static string procstr = "";
 		private static bool keeprun = false;
 		
 		public static string TMPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];
+		public static string PROCNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCNAME"];
+		public static string PROCPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCPATH"];
 		
 		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
 		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
@@ -337,18 +338,9 @@ namespace ASPMCServer
 			keeprun = false;
 			KEEPRUN = false;
 			INPUTFLAG = 0;
-			Process [] ps = Process.GetProcessesByName(procname);
-			if (ps != null && ps.Length > 0) {
-				foreach (Process p in ps) {
-					try {
-						p.Kill();
-					} catch (Exception e) {
-						return "失败：" + e.Message;
-					}
-				}
-				return "已关闭指定进程";
-			}
-			return "未能获取指定进程信息";
+			if (!findedProcName(procname))
+				return "未能获取指定进程信息";
+			return "已发送关闭指令";
 		}
 
 		/// <summary>
@@ -372,37 +364,10 @@ namespace ASPMCServer
 			return mystr.Substring(mystr.IndexOf("<br>") + 4);
 		}
 
-		// 外部输入流监听服务
-		private static void startProcReadMsg() {
-			string s = null;
-			int flag = INPUTCMD_END;
-			while (keeprun) {
-				flag = INPUTFLAG;
-				if (flag == INPUTCMD_SEND) {
-					s = INPUT;
-					INPUTFLAG = INPUTCMD_RUN;
-					if (!string.IsNullOrEmpty(s)) {
-						sendCommand(procname, s);
-					}
-				} else if (flag == INPUTCMD_RUN) {
-					Thread.Sleep(500);	// 监听频率：0.5s
-				} else {
-					// 非发送、非运行的情况，退出执行
-					break;
-				}
-			}
-		}
-		
-		private static void OnDataReceived(object sender, DataReceivedEventArgs e) {
-			procstr = procstr + "<br>" + e.Data;
-			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
-			PROCSTR = procstr;
-		}
 		// 自动重启服务
 		private static void startProcThread()
 		{
 			while (keeprun) {
-				procstr = "";
 				if (findedProcName(procname)) {
 					// 已存在实例
 					return;
@@ -412,26 +377,26 @@ namespace ASPMCServer
 				myProcess.StartInfo.UseShellExecute = false;
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
-				myProcess.OutputDataReceived += new DataReceivedEventHandler(OnDataReceived);
+				myProcess.StartInfo.CreateNoWindow = true;
+				myProcess.StartInfo.Arguments = "\"" + PROCNAME + "\" \"" + PROCPATH + "\" \"" + TMPDIR + "\"";
 				myProcess.Start();
-				myProcess.BeginOutputReadLine();
 				myProcess.WaitForExit();
-				INPUTFLAG = INPUTCMD_END;
 				myProcess.Close();
 				myProcess = null;
-				procstr = "";
 				PROCSTR = "log end";
 				keeprun = KEEPRUN;
 				if (keeprun)
-					for (int i = 0; i < 10 && keeprun; i++)
+					for (int i = 0; i < 10 && KEEPRUN; i++)
 						Thread.Sleep(1000);
 			}
 		}
+		// 返回是否发现指定进程
 		private static bool findedProcName(string pname)
 		{
 			Process [] ps = Process.GetProcessesByName(pname);
 			return (ps != null && ps.Length > 0);
 		}
+
 		/// <summary>
 		/// 我要开服
 		/// </summary>
@@ -471,8 +436,6 @@ namespace ASPMCServer
 			if (!sinput.Equals("A")) {
 				return "消息缓存设置已炸";
 			}
-			Thread tmsg = new Thread(startProcReadMsg);
-			tmsg.Start();
 			Thread tproc = new Thread(startProcThread);
 			tproc.Start();
             return "尝试开服，请使用log查看信息";
@@ -484,16 +447,9 @@ namespace ASPMCServer
 		/// <param name="procname">进程名</param>
 		/// <returns>信息(含错误信息)</returns>
 		public static string getStrFromProc(string procname) {
-			if (myProcess == null) {
-				Process [] ps = Process.GetProcessesByName(procname);
-				if (ps != null && ps.Length > 0) {
-					// 线程已被外部接管
-					string s = "线程已托管，将尝试从log信息获取<br>";
-					s += PROCSTR;
-					return s;
-				}
-			} else {
-				return procstr;
+			// 直接接管
+			if (findedProcName(procname)) {
+				return PROCSTR;
 			}
 			return "未找到指定应用程序";
 		}
@@ -506,23 +462,6 @@ namespace ASPMCServer
 				return "远程命令" + cmd + "已发送";
 			}
 			return "未能找到对应接收进程";
-		}
-		/// <summary>
-		/// 发送指定消息
-		/// </summary>
-		/// <param name="pname">进程名</param>
-		/// <param name="cmd">消息</param>
-		/// <returns>消息反馈</returns>
-		public static string sendCommand(string pname, string cmd) {
-			if (myProcess != null) {
-				if (!myProcess.HasExited) {
-					myProcess.StandardInput.WriteLine(cmd);
-				}
-			} else {
-				 // 远端进程发送消息
-				 return postLongCmd(pname, cmd);
-			}
-			return "命令" + cmd + "已发送";
 		}
 		
 		const int WM_KEYDOWN = 0x0100;
