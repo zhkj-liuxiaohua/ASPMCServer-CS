@@ -7,9 +7,12 @@
  * 要改变这种模板请点击 工具|选项|代码编写|编辑标准头文件
  */
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
+using System.IO.MemoryMappedFiles;
 
 namespace MCSLauncher
 {
@@ -18,6 +21,8 @@ namespace MCSLauncher
 	/// </summary>
 	public class mccontrol
 	{
+		public static Hashtable memtable = new Hashtable();
+		
 		public mccontrol()
 		{
 		}
@@ -27,17 +32,134 @@ namespace MCSLauncher
 		private static string procpath = null;
 		private static string procstr = "";
 		private static bool keeprun = false;
-		
-		public static string TMPDIR = ".";
-		
-		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
-		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
-		public const string INPUT_FILE = @"\MINPUT.tmp";
-		public const string INPUTFLAG_FILE = @"\MINPUTFLAG.tmp";
 
+		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
+		public const string PROCSTR_TAG = "MPROCSTR_TAG";
+		public const string INPUT_TAG = "MINPUT_TAG";
+		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
+		
 		public const int INPUTCMD_END = 0;
 		public const int INPUTCMD_RUN = 1;
 		public const int INPUTCMD_SEND = 2;
+		
+		/// <summary>
+		/// 共享内存读取一个整数
+		/// </summary>
+		/// <param name="tag">标签名</param>
+		/// <returns>取值</returns>
+		public static int memgetInt(string tag)
+		{
+			if (string.IsNullOrEmpty(tag)) {
+				return 0;
+			}
+			int i = 0;
+			try {
+				MemoryMappedFile mmf = null;
+				Object o = memtable[tag];
+				if (o == null) {
+					mmf = MemoryMappedFile.CreateOrOpen(tag, sizeof(int));
+					memtable.Add(tag, mmf);
+				} else {
+					mmf = (MemoryMappedFile)o;
+				}
+				i = mmf.CreateViewAccessor().ReadInt32(0);
+			} catch {
+			}
+			return i;
+		}
+		
+		/// <summary>
+		/// 共享内存设置一个整数
+		/// </summary>
+		/// <param name="tag">标签名</param>
+		/// <param name="value">整数值</param>
+		public static void memsetInt(string tag, int value)
+		{
+			if (string.IsNullOrEmpty(tag)) {
+				return;
+			}
+			try {
+				MemoryMappedFile mmf = null;
+				Object o = memtable[tag];
+				if (o == null) {
+					mmf = MemoryMappedFile.CreateOrOpen(tag, sizeof(int));
+					memtable.Add(tag, mmf);
+				} else {
+					mmf = (MemoryMappedFile)o;
+				}
+				mmf.CreateViewAccessor().Write(0, value);
+			} catch {
+			}
+		}
+		
+		/// <summary>
+		/// 共享内存读取一个字符串
+		/// </summary>
+		/// <param name="tag">标签名</param>
+		/// <returns>取值</returns>
+		public static string memgetString(string tag)
+		{
+			if (string.IsNullOrEmpty(tag)) {
+				return null;
+			}
+			string s = null;
+			try {
+				MemoryMappedFile mmf = null;
+				Object o = memtable[tag];
+				if (o == null) {
+					mmf = MemoryMappedFile.CreateOrOpen(tag, 1024 * 1024);
+					memtable.Add(tag, mmf);
+				} else {
+					mmf = (MemoryMappedFile)o;
+				}
+				MemoryMappedViewAccessor vm = mmf.CreateViewAccessor();
+				int size = vm.ReadInt32(0);
+				byte [] chs = null;
+				if (size > 0) {
+					chs = new byte[size];
+					for (int i = 0, l = sizeof(int); i < size; i++) {
+						chs[i] = vm.ReadByte(i + l);
+					}
+					s = Encoding.UTF8.GetString(chs);
+				}
+			} catch {
+			}
+			return s;
+		}
+		
+		/// <summary>
+		/// 共享内存设置一个字符串
+		/// </summary>
+		/// <param name="tag">标签名</param>
+		/// <param name="value">值</param>
+		public static void memsetString(string tag, string value)
+		{
+			if (string.IsNullOrEmpty(tag)) {
+				return;
+			}
+			try {
+				int size = 0;
+				byte [] chs = null;
+				if (!string.IsNullOrEmpty(value)) {
+					chs = Encoding.UTF8.GetBytes(value);
+					size = chs.Length;
+				}
+				MemoryMappedFile mmf = null;
+				Object o = memtable[tag];
+				if (o == null) {
+					mmf = MemoryMappedFile.CreateOrOpen(tag, 1024 * 1024);
+					memtable.Add(tag, mmf);
+				} else {
+					mmf = (MemoryMappedFile)o;
+				}
+				MemoryMappedViewAccessor vm = mmf.CreateViewAccessor();
+				vm.Write(0, size);
+				for (int i = 0, l = sizeof(int); i < size; i++) {
+					vm.Write(i + l, chs[i]);
+				}
+			} catch {
+			}
+		}
 		
 		/// <summary>
 		/// 文件读取一个字符串
@@ -75,40 +197,39 @@ namespace MCSLauncher
 		// 硬存储运行状态
 		public static bool KEEPRUN {
 			get {
-				return filegetString(TMPDIR + KEEPRUN_FILE).Equals("1");
+				return memgetInt(KEEPRUN_TAG) == 1;
 			}
 			set{
-				string s = (value ? "1" : "0");
-				filesetString(TMPDIR + KEEPRUN_FILE, s);
+				memsetInt(KEEPRUN_TAG, value ? 1 : 0);
 			}
 		}
 
 		// 硬存储log信息
 		public static string PROCSTR {
 			get {
-				return filegetString(TMPDIR + PROCSTR_FILE);
+				return memgetString(PROCSTR_TAG);
 			}
 			set {
-				filesetString(TMPDIR + PROCSTR_FILE, value);
+				memsetString(PROCSTR_TAG, value);
 			}
 		}
 		
 		// 硬存储外部发送信号信息
 		public static int INPUTFLAG {
 			get {
-				return Convert.ToInt32(filegetString(TMPDIR + INPUTFLAG_FILE));
+				return memgetInt(INPUTFLAG_TAG);
 			}
 			set {
-				filesetString(TMPDIR + INPUTFLAG_FILE, "" + value);
+				memsetInt(INPUTFLAG_TAG, value);
 			}
 		}
 		// 硬存储外部输入流详细信息
 		public static string INPUT {
 			get {
-				return filegetString(TMPDIR + INPUT_FILE);
+				return memgetString(INPUT_TAG);
 			}
 			set {
-				filesetString(TMPDIR + INPUT_FILE, value);
+				memsetString(INPUT_TAG, value);
 			}
 		}
 		
@@ -170,7 +291,7 @@ namespace MCSLauncher
 						sendCommand(procname, s);
 					}
 				} else if (flag == INPUTCMD_RUN) {
-					Thread.Sleep(500);	// 监听频率：0.5s
+					Thread.Sleep(100);	// 监听频率：0.1s
 				} else {
 					// 非发送、非运行的情况，退出执行
 					break;
@@ -226,7 +347,7 @@ namespace MCSLauncher
 		/// <param name="pname">服务端应用名称</param>
 		/// <param name="fpath">服务端应用实际完整路径</param>
 		/// <returns>开服信息</returns>
-		public static string StartProc(string pname, string fpath, string tpath)
+		public static string StartProc(string pname, string fpath)
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited)
@@ -237,7 +358,6 @@ namespace MCSLauncher
 			}
 			procname = pname;
 			procpath = fpath;
-			TMPDIR = tpath;
 			keeprun = true;
 			// 共享内存自检
 			KEEPRUN = true;
