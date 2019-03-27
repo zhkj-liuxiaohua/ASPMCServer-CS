@@ -22,13 +22,14 @@ namespace MCSLauncher
 		[STAThread]
 		private static void Main(string[] args)
 		{
-			string pname = null, ppath = null;
-			if (args.Length > 1) {
+			string pname = null, ppath = null, logpath = null;
+			if (args.Length > 2) {
 				pname = args[0];
 				ppath = args[1];
+				logpath = args[2];
 			}
-			if (!String.IsNullOrEmpty(pname) && !String.IsNullOrEmpty(ppath))
-				mccontrol.StartProc(pname, ppath);
+			if (!String.IsNullOrEmpty(pname) && !String.IsNullOrEmpty(ppath) && !String.IsNullOrEmpty(logpath))
+				mccontrol.StartProc(pname, ppath, logpath);
 		}
 	}
 }

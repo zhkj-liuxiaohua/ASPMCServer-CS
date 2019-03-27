@@ -32,12 +32,14 @@ namespace MCSLauncher
 		private static string procpath = null;
 		private static string procstr = "";
 		private static bool keeprun = false;
-
+		public static string log_file_path = "log.txt";
+		
 		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
 		public const string PROCSTR_TAG = "MPROCSTR_TAG";
 		public const string INPUT_TAG = "MINPUT_TAG";
 		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
 		
+
 		public const int INPUTCMD_END = 0;
 		public const int INPUTCMD_RUN = 1;
 		public const int INPUTCMD_SEND = 2;
@@ -233,6 +235,23 @@ namespace MCSLauncher
 			}
 		}
 		
+		// 文件存储外部输入信息
+		public static string LOG_FILE_INFO {
+			get {
+				try {
+					return File.ReadAllText(log_file_path);
+				} catch{
+				}
+				return null;
+			}
+			set {
+				try {
+					File.WriteAllText(log_file_path, value);
+				} catch {
+				}
+			}
+		}
+		
 		/// <summary>
 		/// 关闭指定进程
 		/// </summary>
@@ -305,6 +324,7 @@ namespace MCSLauncher
 			procstr = procstr + "<br>" + e.Data;
 			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
 			PROCSTR = procstr;
+			logAdd(e.Data);
 		}
 		// 自动重启服务
 		private static void startProcThread()
@@ -346,8 +366,9 @@ namespace MCSLauncher
 		/// </summary>
 		/// <param name="pname">服务端应用名称</param>
 		/// <param name="fpath">服务端应用实际完整路径</param>
+		/// <param name="logpath">服务端往期log完整路径</param>
 		/// <returns>开服信息</returns>
-		public static string StartProc(string pname, string fpath)
+		public static string StartProc(string pname, string fpath, string logpath)
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited)
@@ -358,6 +379,7 @@ namespace MCSLauncher
 			}
 			procname = pname;
 			procpath = fpath;
+			log_file_path = logpath;
 			keeprun = true;
 			// 共享内存自检
 			KEEPRUN = true;
@@ -426,12 +448,47 @@ namespace MCSLauncher
 			if (myProcess != null) {
 				if (!myProcess.HasExited) {
 					myProcess.StandardInput.WriteLine(cmd);
+					logAdd(cmd);
 				}
 			} else {
 				 // 远端进程发送消息
 				 return postLongCmd(pname, cmd);
 			}
 			return "命令" + cmd + "已发送";
+		}
+		
+		/// <summary>
+		/// 截取前段指定行数的信息
+		/// </summary>
+		/// <param name="mystr">原始字符串</param>
+		/// <param name="linecount">指定行数</param>
+		/// <returns>修整后的行数</returns>
+		public static string FormatStrAsLineResc(string mystr, int linecount) {
+			if (linecount < 1) {
+				return mystr;
+			}
+			string [] strs = mystr.Split(new string [] {"<br>"}, StringSplitOptions.RemoveEmptyEntries);
+			if (strs.Length < linecount) {
+				return mystr;
+			}
+			mystr = strs[0];
+			for (int i = 1; i < linecount; i++) {
+				mystr += ("<br>" + strs[i]);
+			}
+			return mystr;
+		}
+		
+		/// <summary>
+		/// 添加一条log信息到文件
+		/// </summary>
+		/// <param name="s">待添加的字符串</param>
+		/// <returns></returns>
+		public static void logAdd(string s)
+		{
+			string slog = LOG_FILE_INFO;
+			slog = s + "<br>" + slog;			// 逆序存储所有log文本
+			slog = FormatStrAsLineResc(slog, 2000); // 最多保留2000行log文本
+			LOG_FILE_INFO = slog;
 		}
 	}
 }

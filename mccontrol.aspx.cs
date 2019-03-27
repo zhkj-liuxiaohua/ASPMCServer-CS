@@ -29,7 +29,7 @@ namespace ASPMCServer
 		#region 预定义按钮处，此处不用开放
 
 //		protected	HtmlInputButton		logout, showbackup, clearbackup, cpmap;
-//		protected Button btwhite, btblack, showmc, btcmd, shutdown, StartServer;
+//		protected Button btwhite, btblack, showmc, showlog, btcmd, shutdown, StartServer;
 //		protected	TextBox		whitetext, blacktext, cmdtext;
 //		protected HtmlGenericControl msg, welcome;
 		
@@ -38,7 +38,7 @@ namespace ASPMCServer
 		public string FTPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["FTPDIR"];
 		public static string LAUNCHERNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["LAUNCHERNAME"];
 		public static string LAUNCHERPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LAUNCHERPATH"];
-		
+
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Page Init & Exit (Open/Close DB connections here...)
@@ -153,6 +153,10 @@ namespace ASPMCServer
 		{
 			secAddTxt(MCWinControl.getStrFromProc(LAUNCHERNAME));
 		}
+		// 显示往期log
+		void ShowlogClick(object sender, EventArgs e) {
+			msg.InnerHtml = MCWinControl.LOG_FILE_INFO;
+		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
 		{
@@ -218,6 +222,7 @@ namespace ASPMCServer
 			btwhite.Click += BtwhiteClick;
 			btblack.Click += BtblackClick;
 			showmc.Click += ShowmcClick;
+			showlog.Click += ShowlogClick;
 			btcmd.Click += BtcmdClick;
 			shutdown.Click += ShutdownClick;
 			StartServer.Click += StartServerClick;
@@ -248,6 +253,7 @@ namespace ASPMCServer
 		
 		public static string PROCNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCNAME"];
 		public static string PROCPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCPATH"];
+		public static string LOG_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGPATH"];
 		
 		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
 		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
@@ -453,7 +459,22 @@ namespace ASPMCServer
 				memsetString(INPUT_TAG, value);
 			}
 		}
-		
+		// 文件存储外部输入信息
+		public static string LOG_FILE_INFO {
+			get {
+				try {
+					return File.ReadAllText(LOG_FILE_PATH);
+				} catch{
+				}
+				return null;
+			}
+			set {
+				try {
+					File.WriteAllText(LOG_FILE_PATH, value);
+				} catch {
+				}
+			}
+		}
 		/// <summary>
 		/// 关闭指定进程
 		/// </summary>
@@ -504,7 +525,8 @@ namespace ASPMCServer
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
 				myProcess.StartInfo.CreateNoWindow = true;
-				myProcess.StartInfo.Arguments = "\"" + PROCNAME + "\" \"" + PROCPATH + "\"";
+				myProcess.StartInfo.Arguments = "\"" + PROCNAME + "\" \"" + PROCPATH + "\" \"" +
+					LOG_FILE_PATH + "\"";
 				myProcess.Start();
 				myProcess.WaitForExit();
 				myProcess.Close();
