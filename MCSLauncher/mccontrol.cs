@@ -22,7 +22,8 @@ namespace MCSLauncher
 	public class mccontrol
 	{
 		public static Hashtable memtable = new Hashtable();
-		
+		public static Mutex mutex = new Mutex();
+
 		public mccontrol()
 		{
 		}
@@ -485,10 +486,12 @@ namespace MCSLauncher
 		/// <returns></returns>
 		public static void logAdd(string s)
 		{
+			mutex.WaitOne();
 			string slog = LOG_FILE_INFO;
 			slog = s + "<br>" + slog;			// 逆序存储所有log文本
 			slog = FormatStrAsLineResc(slog, 2000); // 最多保留2000行log文本
 			LOG_FILE_INFO = slog;
+			mutex.ReleaseMutex();
 		}
 	}
 }
