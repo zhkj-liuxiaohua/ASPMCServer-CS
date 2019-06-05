@@ -43,6 +43,10 @@
     <DefineConstants>TRACE</DefineConstants>
     <StartAction>Project</StartAction>
     <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
+    <StartArguments>1,2,3</StartArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp">

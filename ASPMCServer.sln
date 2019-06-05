@@ -1,8 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-# SharpDevelop 5.1
-VisualStudioVersion = 12.0.20827.3
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28922.388
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASPMCServer", "ASPMCServer.csproj", "{6FC8993B-90F9-4FE3-8104-08577AF91018}"
 EndProject
@@ -34,5 +33,11 @@ Global
 		{DA13FC40-F51F-415C-835B-CBF845B89EC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA13FC40-F51F-415C-835B-CBF845B89EC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA13FC40-F51F-415C-835B-CBF845B89EC0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {51373B02-861D-411A-9E51-076BD60430F6}
 	EndGlobalSection
 EndGlobal

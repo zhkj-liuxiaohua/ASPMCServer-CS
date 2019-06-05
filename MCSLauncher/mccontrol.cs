@@ -32,6 +32,7 @@ namespace MCSLauncher
 		private static string procstr = "";
 		private static bool keeprun = false;
 		public static string log_file_path = "log.txt";
+		public static string event_file_path = "event.txt";
 		
 		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
 		public const string PROCSTR_TAG = "MPROCSTR_TAG";
@@ -246,6 +247,22 @@ namespace MCSLauncher
 			set {
 				try {
 					File.WriteAllText(log_file_path, value);
+				} catch {
+				}
+			}
+		}
+		// 文件存储监控事件信息
+		public static string EVENT_FILE_INFO {
+			get {
+				try {
+					return File.ReadAllText(event_file_path);
+				} catch{
+				}
+				return null;
+			}
+			set {
+				try {
+					File.WriteAllText(event_file_path, value);
 				} catch {
 				}
 			}
@@ -466,6 +483,14 @@ namespace MCSLauncher
 		}
 		
 		private static void OnDataReceived(object sender, DataReceivedEventArgs e) {
+			string info = e.Data;
+			if (info == null)
+				return;
+			if (info[0] == '{') {
+				// 添加事件监听
+				eventAdd(info.Substring(1));
+				return;
+			}
 			procstr = procstr + "<br>" + e.Data;
 			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
 			PROCSTR = procstr;
@@ -515,8 +540,9 @@ namespace MCSLauncher
 		/// <param name="pexe">实际服务端应用程序路径</param>
 		/// <param name="pmoddir">监控插件目录</param>
 		/// <param name="logpath">服务端往期log完整路径</param>
+		/// <param name="eventpath">服务端往期监控完整路径</param>
 		/// <returns>开服信息</returns>
-		public static string StartProc(string pname, string fpath, string pexe, string pmoddir, string logpath)
+		public static string StartProc(string pname, string fpath, string pexe, string pmoddir, string logpath, string eventpath)
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited)
@@ -529,6 +555,7 @@ namespace MCSLauncher
 			procpath = fpath;
 			pargs = " " + pexe + " " + pmoddir;
 			log_file_path = logpath;
+			event_file_path = eventpath;
 			keeprun = true;
 			// 共享内存自检
 			KEEPRUN = true;
@@ -639,6 +666,19 @@ namespace MCSLauncher
 			slog = s + "<br>" + slog;			// 逆序存储所有log文本
 			slog = FormatStrAsLineResc(slog, 2000); // 最多保留2000行log文本
 			LOG_FILE_INFO = slog;
+			mutex.ReleaseMutex();
+		}
+		
+		/// <summary>
+		/// 添加一条监控信息到文件
+		/// </summary>
+		/// <param name="s"></param>
+		public static void eventAdd(string s) {
+			mutex.WaitOne();
+			string slog = EVENT_FILE_INFO;
+			slog = s + "<br>" + slog;			// 逆序存储所有event文本
+			slog = FormatStrAsLineResc(slog, 200000); // 最多保留20w行event文本
+			EVENT_FILE_INFO = slog;
 			mutex.ReleaseMutex();
 		}
 	}

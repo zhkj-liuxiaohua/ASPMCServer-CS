@@ -29,7 +29,7 @@ namespace ASPMCServer
 		#region 预定义按钮处，此处不用开放
 
 //		protected	HtmlInputButton		logout, showbackup, clearbackup, cpmap;
-//		protected Button btwhite, btblack, showmc, showlog, btcmd, shutdown, StartServer;
+//		protected Button btwhite, btblack, showmc, showlog, showevent, btcmd, shutdown, StartServer;
 //		protected	TextBox		whitetext, blacktext, cmdtext;
 //		protected HtmlGenericControl msg, welcome;
 		
@@ -157,6 +157,10 @@ namespace ASPMCServer
 		void ShowlogClick(object sender, EventArgs e) {
 			msg.InnerHtml = MCWinControl.LOG_FILE_INFO;
 		}
+		// 显示监控
+		void ShoweventClick(object sender, EventArgs e) {
+			msg.InnerHtml = MCWinControl.EVENT_FILE_INFO;
+		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
 		{
@@ -223,6 +227,7 @@ namespace ASPMCServer
 			btblack.Click += BtblackClick;
 			showmc.Click += ShowmcClick;
 			showlog.Click += ShowlogClick;
+			showevent.Click += ShoweventClick;
 			btcmd.Click += BtcmdClick;
 			shutdown.Click += ShutdownClick;
 			StartServer.Click += StartServerClick;
@@ -256,6 +261,7 @@ namespace ASPMCServer
 		public static string PEXEPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PEXEPATH"];
 		public static string PDLLDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["PDLLDIR"];
 		public static string LOG_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGPATH"];
+		public static string EVENT_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["EVENTPATH"];
 		
 		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
 		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
@@ -477,6 +483,23 @@ namespace ASPMCServer
 				}
 			}
 		}
+		// 文件存储监控事件信息
+		public static string EVENT_FILE_INFO {
+			get {
+				try {
+					return File.ReadAllText(EVENT_FILE_PATH);
+				} catch{
+				}
+				return null;
+			}
+			set {
+				try {
+					File.WriteAllText(EVENT_FILE_PATH, value);
+				} catch {
+				}
+			}
+		}
+
 		/// <summary>
 		/// 关闭指定进程
 		/// </summary>
@@ -529,7 +552,7 @@ namespace ASPMCServer
 				myProcess.StartInfo.CreateNoWindow = true;
 				myProcess.StartInfo.Arguments = PROCNAME + " " + PROCPATH + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
-					LOG_FILE_PATH;
+					LOG_FILE_PATH + " " + EVENT_FILE_PATH;
 				myProcess.Start();
 				myProcess.WaitForExit();
 				myProcess.Close();
@@ -589,9 +612,10 @@ namespace ASPMCServer
 			}
 			Thread tproc = new Thread(startProcThread);
 			tproc.Start();
-			return "尝试开服，请使用log查看信息<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " +
+			return "尝试开服，请使用log查看信息"
+				+ "<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
-					LOG_FILE_PATH;
+					LOG_FILE_PATH + " " + EVENT_FILE_PATH;
 		}
 		
 		/// <summary>
