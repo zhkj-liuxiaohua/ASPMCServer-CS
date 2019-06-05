@@ -253,6 +253,8 @@ namespace ASPMCServer
 		
 		public static string PROCNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCNAME"];
 		public static string PROCPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCPATH"];
+		public static string PEXEPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PEXEPATH"];
+		public static string PDLLDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["PDLLDIR"];
 		public static string LOG_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGPATH"];
 		
 		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
@@ -525,8 +527,9 @@ namespace ASPMCServer
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
 				myProcess.StartInfo.CreateNoWindow = true;
-				myProcess.StartInfo.Arguments = "\"" + PROCNAME + "\" \"" + PROCPATH + "\" \"" +
-					LOG_FILE_PATH + "\"";
+				myProcess.StartInfo.Arguments = PROCNAME + " " + PROCPATH + " " +
+					PEXEPATH + " " + PDLLDIR + " " +
+					LOG_FILE_PATH;
 				myProcess.Start();
 				myProcess.WaitForExit();
 				myProcess.Close();
@@ -586,7 +589,9 @@ namespace ASPMCServer
 			}
 			Thread tproc = new Thread(startProcThread);
 			tproc.Start();
-            return "尝试开服，请使用log查看信息";
+			return "尝试开服，请使用log查看信息<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " +
+					PEXEPATH + " " + PDLLDIR + " " +
+					LOG_FILE_PATH;
 		}
 		
 		/// <summary>

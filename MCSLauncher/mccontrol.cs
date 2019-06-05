@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.IO.MemoryMappedFiles;
@@ -19,18 +20,15 @@ namespace MCSLauncher
 	/// <summary>
 	/// Description of mccontrol.
 	/// </summary>
-	public class mccontrol
+	public static class mccontrol
 	{
 		public static Hashtable memtable = new Hashtable();
 		public static Mutex mutex = new Mutex();
 
-		public mccontrol()
-		{
-		}
-		
 		private static Process myProcess = null;
 		private static string procname = null;
 		private static string procpath = null;
+		private static string pargs = null;
 		private static string procstr = "";
 		private static bool keeprun = false;
 		public static string log_file_path = "log.txt";
@@ -267,7 +265,7 @@ namespace MCSLauncher
 			if (ps != null && ps.Length > 0) {
 				foreach (Process p in ps) {
 					try {
-						p.Kill();
+						KillTree(p.Id);
 					} catch (Exception e) {
 						return "失败：" + e.Message;
 					}
@@ -275,6 +273,152 @@ namespace MCSLauncher
 				return "已关闭指定进程";
 			}
 			return "未能获取指定进程信息";
+		}
+
+		#region PInvokes
+		[DllImport("KERNEL32.DLL")]
+		private static extern int OpenProcess(eDesiredAccess dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+		[DllImport("KERNEL32.DLL")]
+		private static extern int CloseHandle(int hObject);
+		[DllImport("NTDLL.DLL")]
+		private static extern int NtQueryInformationProcess(int hProcess, PROCESSINFOCLASS pic, ref PROCESS_BASIC_INFORMATION pbi, int cb, ref int pSize);
+		private enum PROCESSINFOCLASS : int
+		{
+			ProcessBasicInformation = 0,
+			ProcessQuotaLimits,
+			ProcessIoCounters,
+			ProcessVmCounters,
+			ProcessTimes,
+			ProcessBasePriority,
+			ProcessRaisePriority,
+			ProcessDebugPort,
+			ProcessExceptionPort,
+			ProcessAccessToken,
+			ProcessLdtInformation,
+			ProcessLdtSize,
+			ProcessDefaultHardErrorMode,
+			ProcessIoPortHandlers,
+			// Note: this is kernel mode only
+			ProcessPooledUsageAndLimits,
+			ProcessWorkingSetWatch,
+			ProcessUserModeIOPL,
+			ProcessEnableAlignmentFaultFixup,
+			ProcessPriorityClass,
+			ProcessWx86Information,
+			ProcessHandleCount,
+			ProcessAffinityMask,
+			ProcessPriorityBoost,
+			MaxProcessInfoClass
+
+		};
+
+		[StructLayout(LayoutKind.Sequential)]
+		private struct PROCESS_BASIC_INFORMATION
+		{
+			public int ExitStatus;
+			public int PebBaseAddress;
+			public int AffinityMask;
+			public int BasePriority;
+			public int UniqueProcessId;
+			public int InheritedFromUniqueProcessId;
+			public int Size
+			{
+				get
+				{
+					return (6 * 4);
+				}
+
+			}
+
+		};
+
+		private enum eDesiredAccess : int
+		{
+			DELETE = 0x00010000,
+			READ_CONTROL = 0x00020000,
+			WRITE_DAC = 0x00040000,
+			WRITE_OWNER = 0x00080000,
+			SYNCHRONIZE = 0x00100000,
+			STANDARD_RIGHTS_ALL = 0x001F0000,
+			PROCESS_TERMINATE = 0x0001,
+			PROCESS_CREATE_THREAD = 0x0002,
+			PROCESS_SET_SESSIONID = 0x0004,
+			PROCESS_VM_OPERATION = 0x0008,
+			PROCESS_VM_READ = 0x0010,
+			PROCESS_VM_WRITE = 0x0020,
+			PROCESS_DUP_HANDLE = 0x0040,
+			PROCESS_CREATE_PROCESS = 0x0080,
+			PROCESS_SET_QUOTA = 0x0100,
+			PROCESS_SET_INFORMATION = 0x0200,
+			PROCESS_QUERY_INFORMATION = 0x0400,
+			PROCESS_ALL_ACCESS = SYNCHRONIZE | 0xFFF
+
+		}
+		#endregion
+		
+		public static void KillTree(int processToKillId)
+		{
+			// Kill each child process
+			foreach (int childProcessId in GetChildProcessIds(processToKillId))
+			{
+				using (Process child = Process.GetProcessById(childProcessId))
+				{
+					child.Kill();
+
+				}
+
+			}
+
+			// Then kill this process
+			using (Process thisProcess = Process.GetProcessById(processToKillId))
+			{
+				thisProcess.Kill();
+			}
+		}
+
+		public static int GetParentProcessId(int processId)
+		{
+			int ParentID = 0;
+			int hProcess = OpenProcess(eDesiredAccess.PROCESS_QUERY_INFORMATION,
+			                           false, processId);
+			if (hProcess != 0)
+			{
+				try
+				{
+					PROCESS_BASIC_INFORMATION pbi = new PROCESS_BASIC_INFORMATION();
+					int pSize = 0;
+					if (-1 != NtQueryInformationProcess(hProcess,
+					                                    PROCESSINFOCLASS.ProcessBasicInformation, ref pbi, pbi.Size, ref
+					                                    pSize))
+					{
+						ParentID = pbi.InheritedFromUniqueProcessId;
+					}
+				}
+				finally
+				{
+					CloseHandle(hProcess);
+				}
+			}
+			return (ParentID);
+		}
+
+		public static int[] GetChildProcessIds(int parentProcessId)
+		{
+			ArrayList myChildren = new ArrayList();
+			foreach (Process proc in Process.GetProcesses())
+			{
+				int currentProcessId = proc.Id;
+				proc.Dispose();
+				if (parentProcessId == GetParentProcessId(currentProcessId))
+				{
+					// Add this one
+					myChildren.Add(currentProcessId);
+					// Add any of its children
+					myChildren.AddRange(GetChildProcessIds(currentProcessId));
+				}
+
+			}
+			return (int[])myChildren.ToArray(typeof(int));
 		}
 
 		/// <summary>
@@ -338,6 +482,7 @@ namespace MCSLauncher
 				}
 				myProcess = new Process();
 				myProcess.StartInfo.FileName = procpath;//控制台程序的路径
+				myProcess.StartInfo.Arguments = pargs;
 				myProcess.StartInfo.UseShellExecute = false;
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
@@ -367,9 +512,11 @@ namespace MCSLauncher
 		/// </summary>
 		/// <param name="pname">服务端应用名称</param>
 		/// <param name="fpath">服务端应用实际完整路径</param>
+		/// <param name="pexe">实际服务端应用程序路径</param>
+		/// <param name="pmoddir">监控插件目录</param>
 		/// <param name="logpath">服务端往期log完整路径</param>
 		/// <returns>开服信息</returns>
-		public static string StartProc(string pname, string fpath, string logpath)
+		public static string StartProc(string pname, string fpath, string pexe, string pmoddir, string logpath)
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited)
@@ -380,6 +527,7 @@ namespace MCSLauncher
 			}
 			procname = pname;
 			procpath = fpath;
+			pargs = " " + pexe + " " + pmoddir;
 			log_file_path = logpath;
 			keeprun = true;
 			// 共享内存自检
@@ -407,7 +555,7 @@ namespace MCSLauncher
 			tmsg.Start();
 			Thread tproc = new Thread(startProcThread);
 			tproc.Start();
-            return "尝试开服，请使用log查看信息";
+			return "尝试开服，请使用log查看信息";
 		}
 		
 		/// <summary>
@@ -452,8 +600,8 @@ namespace MCSLauncher
 					logAdd(cmd);
 				}
 			} else {
-				 // 远端进程发送消息
-				 return postLongCmd(pname, cmd);
+				// 远端进程发送消息
+				return postLongCmd(pname, cmd);
 			}
 			return "命令" + cmd + "已发送";
 		}

@@ -7,11 +7,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle ("MCSLauncher")]
-[assembly: AssemblyDescription ("MC消息转发器")]
+[assembly: AssemblyTitle ("MCDllInject")]
+[assembly: AssemblyDescription ("外挂启动器")]
 [assembly: AssemblyConfiguration ("")]
 [assembly: AssemblyCompany ("")]
-[assembly: AssemblyProduct ("MCSLauncher")]
+[assembly: AssemblyProduct ("DllInject")]
 [assembly: AssemblyCopyright ("Copyright 2019")]
 [assembly: AssemblyTrademark ("")]
 [assembly: AssemblyCulture ("")]
