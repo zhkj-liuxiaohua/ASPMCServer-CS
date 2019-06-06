@@ -675,10 +675,7 @@ namespace MCSLauncher
 		/// <param name="s"></param>
 		public static void eventAdd(string s) {
 			mutex.WaitOne();
-			string slog = EVENT_FILE_INFO;
-			slog = s + "<br>" + slog;			// 逆序存储所有event文本
-			slog = FormatStrAsLineResc(slog, 200000); // 最多保留20w行event文本
-			EVENT_FILE_INFO = slog;
+			File.AppendAllLines(event_file_path, new string[]{s});	// 逐行存储，不设限制，通过计划任务进行每日日志调度
 			mutex.ReleaseMutex();
 		}
 	}

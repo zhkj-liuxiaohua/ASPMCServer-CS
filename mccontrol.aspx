@@ -28,7 +28,7 @@
 <input id="clearbackup" runat="server" type="button" value="清理备份目录至最近10个(慎重)" style="position: absolute; right: 2vmin"></p>
 <p><asp:Button runat="server" Text="一键显示后台信息(最多20条)" id="showmc"></asp:Button>
 　<asp:Button runat="server" Text="一键显示往期log信息(最多2000条)" id="showlog"></asp:Button>
-　<asp:Button runat="server" Text="监控" id="showevent"></asp:Button>
+　<a href="events.aspx">前往监控页</a>
 <input id="cpmap" runat="server" type="button" value="复制地图至ftp" style="position: absolute; right: 2vmin"></p>
 
 <p>发送后台指令：<asp:TextBox runat="server" id="cmdtext"></asp:TextBox>

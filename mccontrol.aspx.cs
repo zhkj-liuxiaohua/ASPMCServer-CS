@@ -29,7 +29,7 @@ namespace ASPMCServer
 		#region 预定义按钮处，此处不用开放
 
 //		protected	HtmlInputButton		logout, showbackup, clearbackup, cpmap;
-//		protected Button btwhite, btblack, showmc, showlog, showevent, btcmd, shutdown, StartServer;
+//		protected Button btwhite, btblack, showmc, showlog, /*showevent,*/ btcmd, shutdown, StartServer;
 //		protected	TextBox		whitetext, blacktext, cmdtext;
 //		protected HtmlGenericControl msg, welcome;
 		
@@ -144,7 +144,7 @@ namespace ASPMCServer
 		}
 		
 		private void secAddTxt(string s) {
-			string mt = msg.InnerHtml;
+			string	mt = msg.InnerHtml;
 			mt += ("<br>" + s);
 			msg.InnerHtml = MCWinControl.FormatStrAsLine(mt, 20);
 		}
@@ -158,9 +158,10 @@ namespace ASPMCServer
 			msg.InnerHtml = MCWinControl.LOG_FILE_INFO;
 		}
 		// 显示监控
-		void ShoweventClick(object sender, EventArgs e) {
-			msg.InnerHtml = MCWinControl.EVENT_FILE_INFO;
-		}
+//		void ShoweventClick(object sender, EventArgs e) {
+//			msg.InnerHtml = MCWinControl.EVENT_FILE_INFO;
+//			base.Response.Redirect("events.aspx", true);
+//		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
 		{
@@ -227,7 +228,7 @@ namespace ASPMCServer
 			btblack.Click += BtblackClick;
 			showmc.Click += ShowmcClick;
 			showlog.Click += ShowlogClick;
-			showevent.Click += ShoweventClick;
+//			showevent.Click += ShoweventClick;
 			btcmd.Click += BtcmdClick;
 			shutdown.Click += ShutdownClick;
 			StartServer.Click += StartServerClick;
