@@ -9,6 +9,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -32,6 +33,8 @@ namespace MCDllInject
 		{
 			if (args == null || args.Length < 2) {
 				Console.WriteLine("参数配置错误");
+				Console.WriteLine("用法：" + Assembly.GetExecutingAssembly().GetName().Name + " [exepath] [dlldir]");
+				return;
 			}
 			dllsInject(args[0], args[1]);
 		}
