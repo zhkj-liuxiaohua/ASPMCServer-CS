@@ -549,7 +549,10 @@ namespace MCSLauncher
 					return "已启动一个实例";
 			}
 			if (findedProcName(pname)) {
-				return "已启动一个实例";
+				// 此处需要重新杀进程
+				//return "已启动一个实例";
+				closeProc(pname);
+				Thread.Sleep(4000);	// 自动重启时限：4s
 			}
 			procname = pname;
 			procpath = fpath;
