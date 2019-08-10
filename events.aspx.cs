@@ -62,7 +62,12 @@ namespace ASPMCServer
 			if (!sessionCheck()) {
 				base.Response.Redirect("unlogin.html", true);
 			}
-			msg.InnerHtml = File.ReadAllText(EVENT_FILE_PATH);
+			string str = "";
+			try {
+				str = File.ReadAllText(EVENT_FILE_PATH);
+			}catch{
+			}
+			msg.InnerHtml = str;
 		}
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
