@@ -33,6 +33,7 @@
     <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <StartAction>Project</StartAction>
+    <StartArguments>MCDllInject C:\Media\MCModDllExe\MCDllInject.exe C:\Media\MCPE\bedrock_server.exe C:\Media\MCModDll\ C:\Media\MCLaucher\log.txt C:\Media\MCLaucher\event.txt</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <OutputPath>bin\Release\</OutputPath>
@@ -43,7 +44,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <StartAction>Project</StartAction>
     <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
-    <StartArguments>MCDllInject C:\Media\MCModDllExe\MCDllInject.exe E:\GAMES\MCPE\bedrock_server.exe C:\Media\MCModDll\ C:\Media\MCLaucher\log.txt C:\Media\MCLaucher\event.txt</StartArguments>
+    <StartArguments>MCDllInject C:\Media\MCModDllExe\MCDllInject.exe C:\Media\MCPE\bedrock_server.exe C:\Media\MCModDll\ C:\Media\MCLaucher\log.txt C:\Media\MCLaucher\event.txt</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG</DefineConstants>

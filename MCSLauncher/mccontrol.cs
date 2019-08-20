@@ -448,19 +448,15 @@ namespace MCSLauncher
 			if (linecount < 1) {
 				return mystr;
 			}
-			try {
-				string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
-				if (strs.Length < linecount) {
-					return mystr;
-				}
-				mystr = "";
-				for (int i = strs.Length - linecount; i < strs.Length; i++) {
-					mystr += ("<br>" + strs[i]);
-				}
-				return mystr.Substring(mystr.IndexOf("<br>") + 4);
-			} catch {
+			string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
+			if (strs.Length < linecount) {
+				return mystr;
 			}
-			return mystr;
+			mystr = "";
+			for (int i = strs.Length - linecount; i < strs.Length; i++) {
+				mystr += ("<br>" + strs[i]);
+			}
+			return mystr.Substring(mystr.IndexOf("<br>") + 4);
 		}
 
 		// 外部输入流监听服务
@@ -488,20 +484,17 @@ namespace MCSLauncher
 		
 		private static void OnDataReceived(object sender, DataReceivedEventArgs e) {
 			string info = e.Data;
-			if (info == null)
+			if (String.IsNullOrEmpty(info))
 				return;
 			if (info[0] == '{') {
 				// 添加事件监听
 				eventAdd(info.Substring(1));
 				return;
 			}
-			try {
 			procstr = procstr + "<br>" + e.Data;
-				procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
-				PROCSTR = procstr;
-				logAdd(e.Data);
-			} catch{
-			}
+			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
+			PROCSTR = procstr;
+			logAdd(e.Data);
 		}
 		// 自动重启服务
 		private static void startProcThread()
@@ -653,17 +646,13 @@ namespace MCSLauncher
 			if (linecount < 1) {
 				return mystr;
 			}
-			try {
-				string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
-				if (strs.Length < linecount) {
-					return mystr;
-				}
-				mystr = strs[0];
-				for (int i = 1; i < linecount; i++) {
-					mystr += ("<br>" + strs[i]);
-				}
+			string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
+			if (strs.Length < linecount) {
 				return mystr;
-			} catch {
+			}
+			mystr = strs[0];
+			for (int i = 1; i < linecount; i++) {
+				mystr += ("<br>" + strs[i]);
 			}
 			return mystr;
 		}

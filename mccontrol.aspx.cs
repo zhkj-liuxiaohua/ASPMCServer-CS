@@ -526,17 +526,13 @@ namespace ASPMCServer
 			if (linecount < 1) {
 				return mystr;
 			}
-			try {
-				string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
-				if (strs.Length < linecount) {
-					return mystr;
-				}
-				mystr = "";
-				for (int i = strs.Length - linecount; i < strs.Length; i++) {
-					mystr += ("<br>" + strs[i]);
-				}
-				return mystr.Substring(mystr.IndexOf("<br>") + 4);
-			} catch {
+			string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
+			if (strs.Length < linecount) {
+				return mystr;
+			}
+			mystr = "";
+			for (int i = strs.Length - linecount; i < strs.Length; i++) {
+				mystr += ("<br>" + strs[i]);
 			}
 			return mystr.Substring(mystr.IndexOf("<br>") + 4);
 		}
