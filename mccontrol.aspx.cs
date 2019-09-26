@@ -29,8 +29,8 @@ namespace ASPMCServer
 		#region 预定义按钮处，此处不用开放
 
 //		protected	HtmlInputButton		logout, showbackup, clearbackup, cpmap;
-//		protected Button btwhite, btblack, showmc, showlog, /*showevent,*/ btcmd, shutdown, StartServer;
-//		protected	TextBox		whitetext, blacktext, cmdtext;
+//		protected Button btwhite, btblack, btban, btunban, showmc, showlog, /*showevent,*/ btcmd, shutdown, StartServer;
+//		protected	TextBox		whitetext, blacktext, bantext, unbantext, cmdtext;
 //		protected HtmlGenericControl msg, welcome;
 		
 		public string BACKUPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["BACKUPDIR"];
@@ -205,6 +205,28 @@ namespace ASPMCServer
 			blacktext.Text = "";
 			secAddTxt(MCWinControl.postLongCmd(LAUNCHERNAME, "whitelist remove \"" + uname + "\""));
 		}
+		// 添加黑名单
+		void BtbanClick(object sender, EventArgs e)
+		{
+			string uname = bantext.Text;
+			if (String.IsNullOrEmpty(uname)) {
+				secAddTxt("空用户名");
+				return;
+			}
+			bantext.Text = "";
+			secAddTxt(MCWinControl.ban(LAUNCHERNAME, uname));
+		}
+		// 移除黑名单
+		void BtunbanClick(object sender, EventArgs e)
+		{
+			string uname = unbantext.Text;
+			if (String.IsNullOrEmpty(uname)) {
+				secAddTxt("空用户名");
+				return;
+			}
+			unbantext.Text = "";
+			secAddTxt(MCWinControl.unban(LAUNCHERNAME, uname));
+		}
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Initialize Component
@@ -226,6 +248,8 @@ namespace ASPMCServer
 			cpmap.ServerClick += cpmapClick;
 			btwhite.Click += BtwhiteClick;
 			btblack.Click += BtblackClick;
+			btban.Click += BtbanClick;
+			btunban.Click += BtunbanClick;
 			showmc.Click += ShowmcClick;
 			showlog.Click += ShowlogClick;
 //			showevent.Click += ShoweventClick;
@@ -263,6 +287,7 @@ namespace ASPMCServer
 		public static string PDLLDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["PDLLDIR"];
 		public static string LOG_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGPATH"];
 		public static string EVENT_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["EVENTPATH"];
+		public static string BANLIST_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["BANLISTPATH"];
 		
 		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
 		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
@@ -553,7 +578,7 @@ namespace ASPMCServer
 				myProcess.StartInfo.CreateNoWindow = true;
 				myProcess.StartInfo.Arguments = PROCNAME + " " + PROCPATH + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
-					LOG_FILE_PATH + " " + EVENT_FILE_PATH;
+					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH;
 				myProcess.Start();
 				myProcess.WaitForExit();
 				myProcess.Close();
@@ -616,7 +641,7 @@ namespace ASPMCServer
 			return "尝试开服，请使用log查看信息"
 				+ "<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
-					LOG_FILE_PATH + " " + EVENT_FILE_PATH;
+					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH;
 		}
 		
 		/// <summary>
@@ -640,6 +665,55 @@ namespace ASPMCServer
 				return "远程命令" + cmd + "已发送";
 			}
 			return "未能找到对应接收进程";
+		}
+
+		// 重载黑名单
+		private static string [] reloadBanlist() {
+			string [] bl = new string[]{};
+			try {
+				bl = File.ReadAllLines(BANLIST_PATH);
+			} catch {
+			}
+			return bl;
+		}
+		
+		// 拉黑名单
+		public static string ban(string pname, string name) {
+			string [] bps = reloadBanlist();
+			foreach (string ob in bps) {
+				string [] pinfos = ob.Split(',');
+				if (pinfos[0] == name) {
+					// 不添加
+					return "玩家" + name + "已存在于黑名单上。";
+				}
+			}
+			File.AppendAllLines(BANLIST_PATH, new string[] {name});
+			postLongCmd(pname, "BANUPDATE");
+			return "玩家" + name + "已添加至黑名单。";
+		}
+		
+		// 解除黑名单
+		public static string unban(string pname, string name) {
+			string [] bps = reloadBanlist();
+			int i = 0;
+			for(int l = bps.Length; i < l; i++) {
+				string ob = bps[i];
+				string [] pinfos = ob.Split(',');
+				if (pinfos[0] == name) {
+					// 即将移除
+					break;
+				}
+			}
+			if (i >= bps.Length)
+				return "玩家" + name + "未在黑名单内。";
+			string nstr = "";
+			for (int j = 0; j < bps.Length; j++) {
+				if (j != i)
+					nstr += (bps[j] + "\n");
+			}
+			File.WriteAllText(BANLIST_PATH, nstr);
+			postLongCmd(pname, "BANUPDATE");
+			return "玩家" + name + "已从黑名单中移除。";
 		}
 		
 		const int WM_KEYDOWN = 0x0100;

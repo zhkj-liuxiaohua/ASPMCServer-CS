@@ -22,9 +22,13 @@
 
 <p>添加白名单：<asp:TextBox runat="server" id="whitetext"></asp:TextBox>
 <asp:Button runat="server" Text="添加" id="btwhite"></asp:Button>
+　添加黑名单：<asp:TextBox runat="server" id="bantext"></asp:TextBox>
+<asp:Button runat="server" Text="添加" id="btban"></asp:Button>
 <input id="showbackup" runat="server" type="button" value="显示备份目录所有文件" style="position: absolute; right: 2vmin"></p>
 <p>移除白名单：<asp:TextBox runat="server" id="blacktext"></asp:TextBox>
 <asp:Button runat="server" Text="移除" id="btblack"></asp:Button>
+　移除黑名单：<asp:TextBox runat="server" id="unbantext"></asp:TextBox>
+<asp:Button runat="server" Text="移除" id="btunban"></asp:Button>
 <input id="clearbackup" runat="server" type="button" value="清理备份目录至最近10个(慎重)" style="position: absolute; right: 2vmin"></p>
 <p><asp:Button runat="server" Text="一键显示后台信息(最多20条)" id="showmc"></asp:Button>
 　<asp:Button runat="server" Text="一键显示往期log信息(最多2000条)" id="showlog"></asp:Button>

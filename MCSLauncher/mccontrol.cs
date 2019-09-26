@@ -30,9 +30,11 @@ namespace MCSLauncher
 		private static string procpath = null;
 		private static string pargs = null;
 		private static string procstr = "";
+		private static string[] banliststr = null;
 		private static bool keeprun = false;
 		public static string log_file_path = "log.txt";
 		public static string event_file_path = "event.txt";
+		public static string ban_file_path = "banlist.txt";
 		
 		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
 		public const string PROCSTR_TAG = "MPROCSTR_TAG";
@@ -116,7 +118,7 @@ namespace MCSLauncher
 				}
 				MemoryMappedViewAccessor vm = mmf.CreateViewAccessor();
 				int size = vm.ReadInt32(0);
-				byte [] chs = null;
+				byte[] chs = null;
 				if (size > 0) {
 					chs = new byte[size];
 					for (int i = 0, l = sizeof(int); i < size; i++) {
@@ -141,7 +143,7 @@ namespace MCSLauncher
 			}
 			try {
 				int size = 0;
-				byte [] chs = null;
+				byte[] chs = null;
 				if (!string.IsNullOrEmpty(value)) {
 					chs = Encoding.UTF8.GetBytes(value);
 					size = chs.Length;
@@ -186,7 +188,8 @@ namespace MCSLauncher
 		/// </summary>
 		/// <param name="path">文件名</param>
 		/// <param name="value">字符串值</param>
-		public static void filesetString(string path, string value) {
+		public static void filesetString(string path, string value)
+		{
 			if (string.IsNullOrEmpty(path)) {
 				return;
 			}
@@ -201,7 +204,7 @@ namespace MCSLauncher
 			get {
 				return memgetInt(KEEPRUN_TAG) == 1;
 			}
-			set{
+			set {
 				memsetInt(KEEPRUN_TAG, value ? 1 : 0);
 			}
 		}
@@ -240,7 +243,7 @@ namespace MCSLauncher
 			get {
 				try {
 					return File.ReadAllText(log_file_path);
-				} catch{
+				} catch {
 				}
 				return null;
 			}
@@ -256,7 +259,7 @@ namespace MCSLauncher
 			get {
 				try {
 					return File.ReadAllText(event_file_path);
-				} catch{
+				} catch {
 				}
 				return null;
 			}
@@ -278,7 +281,7 @@ namespace MCSLauncher
 			keeprun = false;
 			KEEPRUN = false;
 			INPUTFLAG = 0;
-			Process [] ps = Process.GetProcessesByName(procname);
+			Process[] ps = Process.GetProcessesByName(procname);
 			if (ps != null && ps.Length > 0) {
 				foreach (Process p in ps) {
 					try {
@@ -325,9 +328,9 @@ namespace MCSLauncher
 			ProcessHandleCount,
 			ProcessAffinityMask,
 			ProcessPriorityBoost,
-			MaxProcessInfoClass
+			MaxProcessInfoClass}
 
-		};
+		;
 
 		[StructLayout(LayoutKind.Sequential)]
 		private struct PROCESS_BASIC_INFORMATION
@@ -338,10 +341,8 @@ namespace MCSLauncher
 			public int BasePriority;
 			public int UniqueProcessId;
 			public int InheritedFromUniqueProcessId;
-			public int Size
-			{
-				get
-				{
+			public int Size {
+				get {
 					return (6 * 4);
 				}
 
@@ -376,10 +377,8 @@ namespace MCSLauncher
 		public static void KillTree(int processToKillId)
 		{
 			// Kill each child process
-			foreach (int childProcessId in GetChildProcessIds(processToKillId))
-			{
-				using (Process child = Process.GetProcessById(childProcessId))
-				{
+			foreach (int childProcessId in GetChildProcessIds(processToKillId)) {
+				using (Process child = Process.GetProcessById(childProcessId)) {
 					child.Kill();
 
 				}
@@ -387,8 +386,7 @@ namespace MCSLauncher
 			}
 
 			// Then kill this process
-			using (Process thisProcess = Process.GetProcessById(processToKillId))
-			{
+			using (Process thisProcess = Process.GetProcessById(processToKillId)) {
 				thisProcess.Kill();
 			}
 		}
@@ -397,22 +395,17 @@ namespace MCSLauncher
 		{
 			int ParentID = 0;
 			int hProcess = OpenProcess(eDesiredAccess.PROCESS_QUERY_INFORMATION,
-			                           false, processId);
-			if (hProcess != 0)
-			{
-				try
-				{
+				               false, processId);
+			if (hProcess != 0) {
+				try {
 					PROCESS_BASIC_INFORMATION pbi = new PROCESS_BASIC_INFORMATION();
 					int pSize = 0;
 					if (-1 != NtQueryInformationProcess(hProcess,
-					                                    PROCESSINFOCLASS.ProcessBasicInformation, ref pbi, pbi.Size, ref
-					                                    pSize))
-					{
+						    PROCESSINFOCLASS.ProcessBasicInformation, ref pbi, pbi.Size, ref
+					                                    pSize)) {
 						ParentID = pbi.InheritedFromUniqueProcessId;
 					}
-				}
-				finally
-				{
+				} finally {
 					CloseHandle(hProcess);
 				}
 			}
@@ -422,12 +415,10 @@ namespace MCSLauncher
 		public static int[] GetChildProcessIds(int parentProcessId)
 		{
 			ArrayList myChildren = new ArrayList();
-			foreach (Process proc in Process.GetProcesses())
-			{
+			foreach (Process proc in Process.GetProcesses()) {
 				int currentProcessId = proc.Id;
 				proc.Dispose();
-				if (parentProcessId == GetParentProcessId(currentProcessId))
-				{
+				if (parentProcessId == GetParentProcessId(currentProcessId)) {
 					// Add this one
 					myChildren.Add(currentProcessId);
 					// Add any of its children
@@ -444,7 +435,8 @@ namespace MCSLauncher
 		/// <param name="mystr">原始字符串</param>
 		/// <param name="linecount">指定行数</param>
 		/// <returns>修整后的行数</returns>
-		public static string FormatStrAsLine(string mystr, int linecount) {
+		public static string FormatStrAsLine(string mystr, int linecount)
+		{
 			if (linecount < 1) {
 				return mystr;
 			}
@@ -460,7 +452,8 @@ namespace MCSLauncher
 		}
 
 		// 外部输入流监听服务
-		private static void startProcReadMsg() {
+		private static void startProcReadMsg()
+		{
 			string s = null;
 			int flag = INPUTCMD_END;
 			while (keeprun) {
@@ -469,7 +462,11 @@ namespace MCSLauncher
 					s = INPUT;
 					INPUTFLAG = INPUTCMD_RUN;
 					if (!string.IsNullOrEmpty(s)) {
-						sendCommand(procname, s);
+						if (s == "BANUPDATE") {
+							// 更新banlist
+							reloadBanlist();
+						} else
+							sendCommand(procname, s);
 					}
 				} else if (flag == INPUTCMD_RUN) {
 					Thread.Sleep(100);	// 监听频率：0.1s
@@ -482,7 +479,8 @@ namespace MCSLauncher
 			closeProc(procname);
 		}
 		
-		private static void OnDataReceived(object sender, DataReceivedEventArgs e) {
+		private static void OnDataReceived(object sender, DataReceivedEventArgs e)
+		{
 			string info = e.Data;
 			if (String.IsNullOrEmpty(info))
 				return;
@@ -495,12 +493,81 @@ namespace MCSLauncher
 			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
 			PROCSTR = procstr;
 			logAdd(e.Data);
+			checkBanlist(info);
 		}
+
+		// 检查黑名单是否符合指定信息
+		private static void checkBanlist(string info)
+		{
+			int ci = info.IndexOf("Player connected");
+			if (ci > -1) {
+				// 解析连接数据
+				string[] pinfo = info.Substring(ci).Split(',');
+				if (pinfo.Length == 2) {
+					string[] pids = pinfo[0].Split(':');
+					string[] puids = pinfo[1].Split(':');
+					string name = "", xuid = "";
+					if (pids.Length == 2) {
+						name = pids[1].Trim();
+					}
+					if (pinfo.Length == 2) {
+						xuid = puids[1].Trim();
+					}
+					// 判断是否存在于黑名单中，并顺便补充完善黑名单xuid
+					int i = 0, l = 0;
+					for (l = banliststr.Length; i < l; i++) {
+						string[] binfo = banliststr[i].Split(',');
+						string bname = "", bxuid = "";
+						if (binfo.Length > 0) {
+							bname = binfo[0];
+						}
+						if (binfo.Length > 1) {
+							bxuid = binfo[1];
+						}
+						if (bname == name || bxuid == xuid)
+							break;
+					}
+					if (i < l) {
+						// 发现存在于黑名单中
+						if (banliststr[i].Split(',').Length < 2) {
+							banliststr[i] += ("," + xuid);
+							updateBanlist();
+						}
+						new Thread(delegate(){
+						           	Thread.Sleep(1000);
+						           	sendCommand(procname, "kick \"" + name + "\" Player's XboxId in Ban List.");
+						           }
+						          ).Start();
+						
+					}
+				}
+			}
+		}
+		
+		// 重载黑名单
+		private static void reloadBanlist()
+		{
+			banliststr = new string[]{};
+			try {
+				banliststr = File.ReadAllLines(ban_file_path);
+			} catch {
+			}
+		}
+		// 更新黑名单
+		private static void updateBanlist()
+		{
+			try {
+				File.WriteAllLines(ban_file_path, banliststr);
+			} catch {
+			}
+		}
+		
 		// 自动重启服务
 		private static void startProcThread()
 		{
 			while (keeprun) {
 				procstr = "";
+				reloadBanlist();
 				if (findedProcName(procname)) {
 					// 已存在实例
 					return;
@@ -529,7 +596,7 @@ namespace MCSLauncher
 		}
 		private static bool findedProcName(string pname)
 		{
-			Process [] ps = Process.GetProcessesByName(pname);
+			Process[] ps = Process.GetProcessesByName(pname);
 			return (ps != null && ps.Length > 0);
 		}
 		/// <summary>
@@ -541,8 +608,9 @@ namespace MCSLauncher
 		/// <param name="pmoddir">监控插件目录</param>
 		/// <param name="logpath">服务端往期log完整路径</param>
 		/// <param name="eventpath">服务端往期监控完整路径</param>
+		/// <param name="banlistpath">黑名单完整路径</param>
 		/// <returns>开服信息</returns>
-		public static string StartProc(string pname, string fpath, string pexe, string pmoddir, string logpath, string eventpath)
+		public static string StartProc(string pname, string fpath, string pexe, string pmoddir, string logpath, string eventpath, string banlistpath)
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited)
@@ -559,6 +627,7 @@ namespace MCSLauncher
 			pargs = " " + pexe + " " + pmoddir;
 			log_file_path = logpath;
 			event_file_path = eventpath;
+			ban_file_path = banlistpath;
 			keeprun = true;
 			// 共享内存自检
 			KEEPRUN = true;
@@ -593,9 +662,10 @@ namespace MCSLauncher
 		/// </summary>
 		/// <param name="procname">进程名</param>
 		/// <returns>信息(含错误信息)</returns>
-		public static string getStrFromProc(string procname) {
+		public static string getStrFromProc(string procname)
+		{
 			if (myProcess == null) {
-				Process [] ps = Process.GetProcessesByName(procname);
+				Process[] ps = Process.GetProcessesByName(procname);
 				if (ps != null && ps.Length > 0) {
 					// 线程已被外部接管
 					string s = "线程已托管，将尝试从log信息获取<br>";
@@ -609,7 +679,8 @@ namespace MCSLauncher
 		}
 		
 		// 远端发送指令
-		public static string postLongCmd(string pname, string cmd) {
+		public static string postLongCmd(string pname, string cmd)
+		{
 			if (findedProcName(pname)) {
 				INPUT = cmd;
 				INPUTFLAG = INPUTCMD_SEND;
@@ -623,7 +694,8 @@ namespace MCSLauncher
 		/// <param name="pname">进程名</param>
 		/// <param name="cmd">消息</param>
 		/// <returns>消息反馈</returns>
-		public static string sendCommand(string pname, string cmd) {
+		public static string sendCommand(string pname, string cmd)
+		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited) {
 					myProcess.StandardInput.WriteLine(cmd);
@@ -642,7 +714,8 @@ namespace MCSLauncher
 		/// <param name="mystr">原始字符串</param>
 		/// <param name="linecount">指定行数</param>
 		/// <returns>修整后的行数</returns>
-		public static string FormatStrAsLineResc(string mystr, int linecount) {
+		public static string FormatStrAsLineResc(string mystr, int linecount)
+		{
 			if (linecount < 1) {
 				return mystr;
 			}
@@ -676,9 +749,10 @@ namespace MCSLauncher
 		/// 添加一条监控信息到文件
 		/// </summary>
 		/// <param name="s"></param>
-		public static void eventAdd(string s) {
+		public static void eventAdd(string s)
+		{
 			mutex.WaitOne();
-			File.AppendAllLines(event_file_path, new string[]{s});	// 逐行存储，不设限制，通过计划任务进行每日日志调度
+			File.AppendAllLines(event_file_path, new string[]{ s });	// 逐行存储，不设限制，通过计划任务进行每日日志调度
 			mutex.ReleaseMutex();
 		}
 	}
