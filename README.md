@@ -1,6 +1,9 @@
 # ASPMCServer-CS
 MC开服控制面板
 
+## EventSearch
+插件事件查询工具
+
 ## MCDllInject
 插件开服器
 
