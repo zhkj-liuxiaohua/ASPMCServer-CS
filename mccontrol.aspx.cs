@@ -11,6 +11,7 @@ using System.Collections;
 using System.IO;
 using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
+using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -157,11 +158,6 @@ namespace ASPMCServer
 		void ShowlogClick(object sender, EventArgs e) {
 			msg.InnerHtml = MCWinControl.LOG_FILE_INFO;
 		}
-		// 显示监控
-//		void ShoweventClick(object sender, EventArgs e) {
-//			msg.InnerHtml = MCWinControl.EVENT_FILE_INFO;
-//			base.Response.Redirect("events.aspx", true);
-//		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
 		{
@@ -252,7 +248,6 @@ namespace ASPMCServer
 			btunban.Click += BtunbanClick;
 			showmc.Click += ShowmcClick;
 			showlog.Click += ShowlogClick;
-//			showevent.Click += ShoweventClick;
 			btcmd.Click += BtcmdClick;
 			shutdown.Click += ShutdownClick;
 			StartServer.Click += StartServerClick;
@@ -283,26 +278,44 @@ namespace ASPMCServer
 		
 		public static string PROCNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCNAME"];
 		public static string PROCPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PROCPATH"];
+		public static string PIPEMSGTAG = System.Web.Configuration.WebConfigurationManager.AppSettings["PIPEMSGTAG"];
 		public static string PEXEPATH = System.Web.Configuration.WebConfigurationManager.AppSettings["PEXEPATH"];
 		public static string PDLLDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["PDLLDIR"];
 		public static string LOG_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGPATH"];
 		public static string EVENT_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["EVENTPATH"];
 		public static string BANLIST_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["BANLISTPATH"];
+		public static string TMPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];   
 		
-		public const string KEEPRUN_FILE = @"\MKEEPRUN.tmp";
+		public static string KEEPRUN_FILE = Path.GetDirectoryName(PROCPATH) + @"\MKEEPRUN.tmp";
 		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
 		public const string INPUT_FILE = @"\MINPUT.tmp";
 		public const string INPUTFLAG_FILE = @"\MINPUTFLAG.tmp";
 
-		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
-		public const string PROCSTR_TAG = "MPROCSTR_TAG";
-		public const string INPUT_TAG = "MINPUT_TAG";
-		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
+		// 过期参数
+//		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
+//		public const string PROCSTR_TAG = "MPROCSTR_TAG";
+//		public const string INPUT_TAG = "MINPUT_TAG";
+//		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
 		
 		public const int INPUTCMD_END = 0;
 		public const int INPUTCMD_RUN = 1;
 		public const int INPUTCMD_SEND = 2;
 		
+		// 消息类型
+		
+		/// <summary>
+		/// 命令消息
+		/// </summary>
+		public const string TAG_CMD = "cmd";
+		/// <summary>
+		/// 停服消息
+		/// </summary>
+		public const string TAG_STOP = "stop";
+		/// <summary>
+		/// 取log消息
+		/// </summary>
+		public const string TAG_REFRESH = "refresh";
+
 		/// <summary>
 		/// 共享内存读取一个整数
 		/// </summary>
@@ -455,42 +468,54 @@ namespace ASPMCServer
 			}
 		}
 		
-		// 硬存储运行状态
+		// 文件存储运行状态
 		public static bool KEEPRUN {
-			get {
-				return memgetInt(KEEPRUN_TAG) == 1;
+			get{
+				return File.Exists(KEEPRUN_FILE);
 			}
 			set{
-				memsetInt(KEEPRUN_TAG, value ? 1 : 0);
+				try {
+					if (value) {
+						File.WriteAllText(KEEPRUN_FILE, "1");
+					} else
+						File.Delete(KEEPRUN_FILE);
+				} catch{
+				}
 			}
 		}
 
-		// 硬存储log信息
+		// 管道读取log信息
 		public static string PROCSTR {
-			get {
-				return memgetString(PROCSTR_TAG);
-			}
-			set {
-				memsetString(PROCSTR_TAG, value);
+			get{
+				string str = "";
+				try {
+					string RECEIVE_TAG = "TAG" + (new Random(DateTime.Now.Millisecond).Next(0, int.MaxValue));
+					if (null != sendFarMessage(TAG_REFRESH + "," + RECEIVE_TAG)) {
+						NamedPipeServerStream pipeIn = new NamedPipeServerStream(RECEIVE_TAG, PipeDirection.InOut, 254);
+						pipeIn.WaitForConnection();
+						StreamReader reader = new StreamReader(pipeIn);
+						while(true) {
+						string line = reader.ReadLine();
+						if (!string.IsNullOrEmpty(line)) {
+						if (line != "FEOF")
+							str += (line + "\n");
+						else
+							break;
+							}
+						}
+						pipeIn.Disconnect();
+					}
+				} catch {
+				}
+				return str;
 			}
 		}
 		
+		
 		// 硬存储外部发送信号信息
-		public static int INPUTFLAG {
-			get {
-				return memgetInt(INPUTFLAG_TAG);
-			}
-			set {
-				memsetInt(INPUTFLAG_TAG, value);
-			}
-		}
-		// 硬存储外部输入流详细信息
 		public static string INPUT {
-			get {
-				return memgetString(INPUT_TAG);
-			}
 			set {
-				memsetString(INPUT_TAG, value);
+				sendFarMessage(value);
 			}
 		}
 		// 文件存储外部输入信息
@@ -527,17 +552,37 @@ namespace ASPMCServer
 		}
 
 		/// <summary>
+		/// 发送远程消息
+		/// </summary>
+		/// <param name="msg">完整信息</param>
+		/// <returns></returns>
+		public static string sendFarMessage(string msg) {
+			try {
+				NamedPipeClientStream pipeOut = new NamedPipeClientStream(".", PIPEMSGTAG, PipeDirection.InOut);
+				pipeOut.Connect(2000);
+				StreamWriter writer = new StreamWriter(pipeOut);
+				writer.AutoFlush = true;
+				writer.WriteLine(msg);
+				pipeOut.Close();
+				return "消息" + msg + "已发送";
+			}catch{
+			}
+			return null;
+		}
+		
+		
+		/// <summary>
 		/// 关闭指定进程
 		/// </summary>
 		/// <param name="procname">进程名</param>
 		/// <returns>关闭信息</returns>
 		public static string closeProc(string procname)
 		{
-			keeprun = false;
-			KEEPRUN = false;
-			INPUTFLAG = 0;
 			if (!findedProcName(procname))
 				return "未能获取指定进程信息";
+			keeprun = false;
+			KEEPRUN = false;
+			INPUT = TAG_STOP + ",true";
 			return "已发送关闭指令";
 		}
 
@@ -576,14 +621,14 @@ namespace ASPMCServer
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
 				myProcess.StartInfo.CreateNoWindow = true;
-				myProcess.StartInfo.Arguments = PROCNAME + " " + PROCPATH + " " +
+				myProcess.StartInfo.Arguments = PROCNAME + " " + PROCPATH + " " +  PIPEMSGTAG + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
 					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH;
 				myProcess.Start();
 				myProcess.WaitForExit();
 				myProcess.Close();
 				myProcess = null;
-				PROCSTR = "log end";
+				//PROCSTR = "log end";
 				keeprun = KEEPRUN;
 				if (keeprun)
 					for (int i = 0; i < 10 && KEEPRUN; i++)
@@ -615,31 +660,16 @@ namespace ASPMCServer
 			procname = pname;
 			procpath = fpath;
 			keeprun = true;
-			// 共享内存自检
+			// 共享文件自检，通道自检跳过
 			KEEPRUN = true;
 			bool krflag = KEEPRUN;
 			if (!krflag) {
 				return "运行状态标志设置已炸";
 			}
-			INPUTFLAG = INPUTCMD_RUN;
-			int msgflag = INPUTFLAG;
-			if (msgflag != INPUTCMD_RUN) {
-				return "消息标志设置已炸";
-			}
-			PROCSTR = "A";
-			string aproc = PROCSTR;
-			if (!aproc.Equals("A")) {
-				return "LOG信息设置已炸";
-			}
-			INPUT = "A";
-			string sinput = INPUT;
-			if (!sinput.Equals("A")) {
-				return "消息缓存设置已炸";
-			}
 			Thread tproc = new Thread(startProcThread);
 			tproc.Start();
 			return "尝试开服，请使用log查看信息"
-				+ "<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " +
+				+ "<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " + PIPEMSGTAG + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
 					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH;
 		}
@@ -660,8 +690,7 @@ namespace ASPMCServer
 		// 远端发送指令
 		public static string postLongCmd(string pname, string cmd) {
 			if (findedProcName(pname)) {
-				INPUT = cmd;
-				INPUTFLAG = INPUTCMD_SEND;
+				INPUT = TAG_CMD + "," + cmd;
 				return "远程命令" + cmd + "已发送";
 			}
 			return "未能找到对应接收进程";

@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;					  
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -28,6 +29,7 @@ namespace MCSLauncher
 		private static Process myProcess = null;
 		private static string procname = null;
 		private static string procpath = null;
+		private static string ptag = null;
 		private static string pargs = null;
 		private static string procstr = "";
 		private static string[] banliststr = null;
@@ -35,16 +37,32 @@ namespace MCSLauncher
 		public static string log_file_path = "log.txt";
 		public static string event_file_path = "event.txt";
 		public static string ban_file_path = "banlist.txt";
-		
-		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
-		public const string PROCSTR_TAG = "MPROCSTR_TAG";
-		public const string INPUT_TAG = "MINPUT_TAG";
-		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
+		public static string KEEPRUN_FILE = System.AppDomain.CurrentDomain.BaseDirectory + "MKEEPRUN.tmp";
+		// 过期mmf方法
+//		public const string KEEPRUN_TAG = "MKEEPRUN_TAG";
+//		public const string PROCSTR_TAG = "MPROCSTR_TAG";
+//		public const string INPUT_TAG = "MINPUT_TAG";
+//		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
 		
 
 		public const int INPUTCMD_END = 0;
 		public const int INPUTCMD_RUN = 1;
 		public const int INPUTCMD_SEND = 2;
+		
+		// 消息类型
+		
+		/// <summary>
+		/// 命令消息
+		/// </summary>
+		public const string TAG_CMD = "cmd";
+		/// <summary>
+		/// 停服消息
+		/// </summary>
+		public const string TAG_STOP = "stop";
+		/// <summary>
+		/// 取log消息
+		/// </summary>
+		public const string TAG_REFRESH = "refresh";
 		
 		/// <summary>
 		/// 共享内存读取一个整数
@@ -199,45 +217,22 @@ namespace MCSLauncher
 			}
 		}
 		
-		// 硬存储运行状态
+		// 文件存储运行状态
 		public static bool KEEPRUN {
 			get {
-				return memgetInt(KEEPRUN_TAG) == 1;
+				return File.Exists(KEEPRUN_FILE);
 			}
-			set {
-				memsetInt(KEEPRUN_TAG, value ? 1 : 0);
+			set{
+				try {
+					if (value) {
+						File.WriteAllText(KEEPRUN_FILE, "1");
+					} else
+						File.Delete(KEEPRUN_FILE);
+				} catch{
+				}
 			}
 		}
 
-		// 硬存储log信息
-		public static string PROCSTR {
-			get {
-				return memgetString(PROCSTR_TAG);
-			}
-			set {
-				memsetString(PROCSTR_TAG, value);
-			}
-		}
-		
-		// 硬存储外部发送信号信息
-		public static int INPUTFLAG {
-			get {
-				return memgetInt(INPUTFLAG_TAG);
-			}
-			set {
-				memsetInt(INPUTFLAG_TAG, value);
-			}
-		}
-		// 硬存储外部输入流详细信息
-		public static string INPUT {
-			get {
-				return memgetString(INPUT_TAG);
-			}
-			set {
-				memsetString(INPUT_TAG, value);
-			}
-		}
-		
 		// 文件存储外部输入信息
 		public static string LOG_FILE_INFO {
 			get {
@@ -280,7 +275,6 @@ namespace MCSLauncher
 		{
 			keeprun = false;
 			KEEPRUN = false;
-			INPUTFLAG = 0;
 			Process[] ps = Process.GetProcessesByName(procname);
 			if (ps != null && ps.Length > 0) {
 				foreach (Process p in ps) {
@@ -451,29 +445,61 @@ namespace MCSLauncher
 			return mystr.Substring(mystr.IndexOf("<br>") + 4);
 		}
 
+		/// <summary>
+		/// 发信消息
+		/// </summary>
+		/// <param name="port">待发送的端口</param>
+		/// <param name="msg">待发送的字符串</param>
+		public static string sendFarMessage(string port, string msg) {
+			// 创建管道连接
+			try {
+			NamedPipeClientStream pipeOut = new NamedPipeClientStream(".", port, PipeDirection.InOut);
+			pipeOut.Connect(2000);
+			StreamWriter writer = new StreamWriter(pipeOut);
+			writer.AutoFlush = true;
+			writer.WriteLine(msg);
+			writer.WriteLine("FEOF");
+			pipeOut.Close();
+			return "远程专有消息已发送。";
+			} catch{
+			}
+			return null;
+		}					
 		// 外部输入流监听服务
 		private static void startProcReadMsg()
 		{
-			string s = null;
-			int flag = INPUTCMD_END;
-			while (keeprun) {
-				flag = INPUTFLAG;
-				if (flag == INPUTCMD_SEND) {
-					s = INPUT;
-					INPUTFLAG = INPUTCMD_RUN;
-					if (!string.IsNullOrEmpty(s)) {
-						if (s == "BANUPDATE") {
-							// 更新banlist
-							reloadBanlist();
-						} else
-							sendCommand(procname, s);
+			NamedPipeServerStream pipeIn = new NamedPipeServerStream(ptag, PipeDirection.InOut, 254);
+			while(keeprun) {
+				pipeIn.WaitForConnection();
+				StreamReader reader = new StreamReader(pipeIn);
+				string line = reader.ReadLine();
+				if (!string.IsNullOrEmpty(line)) {
+					// 消息处理
+					string [] cmds = line.Split(',');
+					if(cmds.Length > 1) {
+						string curstrr = line.Substring(line.IndexOf(',') + 1);
+						switch (cmds[0]) {
+							case TAG_CMD:
+								if (!string.IsNullOrEmpty(curstrr)) { 
+									if (curstrr == "BANUPDATE") { 
+									// 更新banlist 
+									reloadBanlist(); 
+								} else 
+									sendCommand(procname, curstrr); 
+								} 
+								break;
+							case TAG_REFRESH:
+								sendFarMessage(curstrr, procstr);
+								break;
+							case TAG_STOP:
+								keeprun = false;
+								KEEPRUN = false;
+								break;
+							//... to do other case
+						}
 					}
-				} else if (flag == INPUTCMD_RUN) {
-					Thread.Sleep(100);	// 监听频率：0.1s
-				} else {
-					// 非发送、非运行的情况，退出执行
-					break;
 				}
+				pipeIn.Disconnect();
 			}
 			// 监听服务结束时，结束正在运行的应用程序
 			closeProc(procname);
@@ -491,7 +517,7 @@ namespace MCSLauncher
 			}
 			procstr = procstr + "<br>" + e.Data;
 			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
-			PROCSTR = procstr;
+			//PROCSTR = procstr;
 			logAdd(e.Data);
 			checkBanlist(info);
 		}
@@ -583,11 +609,10 @@ namespace MCSLauncher
 				myProcess.Start();
 				myProcess.BeginOutputReadLine();
 				myProcess.WaitForExit();
-				//INPUTFLAG = INPUTCMD_END;
 				myProcess.Close();
 				myProcess = null;
-				procstr = "";
-				PROCSTR = "log end";
+				procstr = "log end";
+				//PROCSTR = "log end";
 				keeprun = KEEPRUN;
 				if (keeprun)
 					for (int i = 0; i < 10 && KEEPRUN; i++)
@@ -610,7 +635,7 @@ namespace MCSLauncher
 		/// <param name="eventpath">服务端往期监控完整路径</param>
 		/// <param name="banlistpath">黑名单完整路径</param>
 		/// <returns>开服信息</returns>
-		public static string StartProc(string pname, string fpath, string pexe, string pmoddir, string logpath, string eventpath, string banlistpath)
+		public static string StartProc(string pname, string fpath, string ptag, string pexe, string pmoddir, string logpath, string eventpath, string banlistpath)
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited)
@@ -624,31 +649,17 @@ namespace MCSLauncher
 			}
 			procname = pname;
 			procpath = fpath;
+			mccontrol.ptag = ptag;
 			pargs = " " + pexe + " " + pmoddir;
 			log_file_path = logpath;
 			event_file_path = eventpath;
 			ban_file_path = banlistpath;
 			keeprun = true;
-			// 共享内存自检
+			// 共享文件自检
 			KEEPRUN = true;
 			bool krflag = KEEPRUN;
 			if (!krflag) {
 				return "运行状态标志设置已炸";
-			}
-			INPUTFLAG = INPUTCMD_RUN;
-			int msgflag = INPUTFLAG;
-			if (msgflag != INPUTCMD_RUN) {
-				return "消息标志设置已炸";
-			}
-			PROCSTR = "A";
-			string aproc = PROCSTR;
-			if (!aproc.Equals("A")) {
-				return "LOG信息设置已炸";
-			}
-			INPUT = "A";
-			string sinput = INPUT;
-			if (!sinput.Equals("A")) {
-				return "消息缓存设置已炸";
 			}
 			Thread tmsg = new Thread(startProcReadMsg);
 			tmsg.Start();
@@ -664,29 +675,13 @@ namespace MCSLauncher
 		/// <returns>信息(含错误信息)</returns>
 		public static string getStrFromProc(string procname)
 		{
-			if (myProcess == null) {
-				Process[] ps = Process.GetProcessesByName(procname);
-				if (ps != null && ps.Length > 0) {
-					// 线程已被外部接管
-					string s = "线程已托管，将尝试从log信息获取<br>";
-					s += PROCSTR;
-					return s;
-				}
-			} else {
-				return procstr;
-			}
-			return "未找到指定应用程序";
+			return procstr;
 		}
 		
 		// 远端发送指令
 		public static string postLongCmd(string pname, string cmd)
 		{
-			if (findedProcName(pname)) {
-				INPUT = cmd;
-				INPUTFLAG = INPUTCMD_SEND;
-				return "远程命令" + cmd + "已发送";
-			}
-			return "未能找到对应接收进程";
+			return sendCommand(pname, cmd);
 		}
 		/// <summary>
 		/// 发送指定消息
@@ -703,7 +698,9 @@ namespace MCSLauncher
 				}
 			} else {
 				// 远端进程发送消息
-				return postLongCmd(pname, cmd);
+				// 出错
+				return "由于进程被回收，命令发送失败。";
+				//return postLongCmd(pname, cmd);
 			}
 			return "命令" + cmd + "已发送";
 		}
