@@ -147,6 +147,10 @@ namespace EventSearch
 				// 添加Dimension事件查询
 				titles.Add(cbdimen.Text);
 			}
+			if (cbchat.Checked) {
+				// 添加Chat事件查询
+				titles.Add(cbchat.Text);
+			}
 			string xboxid = null;
 			if (cbxbox.Checked) {
 				// 添加玩家xboxID查询
