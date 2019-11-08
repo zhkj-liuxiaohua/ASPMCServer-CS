@@ -561,7 +561,7 @@ namespace MCSLauncher
 						}
 						new Thread(delegate(){
 						           	Thread.Sleep(1000);
-						           	sendCommand(procname, "kick \"" + name + "\" Player's XboxId in Ban List.");
+						           	sendCommand(procname, "kick \"" + name + "\" 该玩家存在于本服黑名单列表中。");
 						           }
 						          ).Start();
 						
@@ -693,7 +693,9 @@ namespace MCSLauncher
 		{
 			if (myProcess != null) {
 				if (!myProcess.HasExited) {
-					myProcess.StandardInput.WriteLine(cmd);
+					byte [] bcmds = Encoding.UTF8.GetBytes(cmd);
+					myProcess.StandardInput.BaseStream.Write(bcmds, 0, bcmds.Length);
+					myProcess.StandardInput.WriteLine("");
 					logAdd(cmd);
 				}
 			} else {
