@@ -605,6 +605,7 @@ namespace MCSLauncher
 				myProcess.StartInfo.RedirectStandardOutput = true;
 				myProcess.StartInfo.RedirectStandardInput = true;
 				myProcess.StartInfo.CreateNoWindow = true;
+				myProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
 				myProcess.OutputDataReceived += OnDataReceived;
 				myProcess.Start();
 				myProcess.BeginOutputReadLine();
