@@ -31,6 +31,7 @@ namespace MCDllInject
 	{
 		public static void Main(string[] args)
 		{
+			Console.OutputEncoding = Encoding.UTF8;
 			if (args == null || args.Length < 2) {
 				Console.WriteLine("参数配置错误");
 				Console.WriteLine("用法：" + Assembly.GetExecutingAssembly().GetName().Name + " [exepath] [dlldir]");
