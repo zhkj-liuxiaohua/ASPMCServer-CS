@@ -284,7 +284,12 @@ namespace ASPMCServer
 		public static string LOG_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGPATH"];
 		public static string EVENT_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["EVENTPATH"];
 		public static string BANLIST_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["BANLISTPATH"];
-		public static string TMPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];   
+		public static string TMPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["TMPDIR"];
+		
+		public static string CLIENTNAME = System.Web.Configuration.WebConfigurationManager.AppSettings["CLIENTNAME"];
+		public static string SERVERADDR = System.Web.Configuration.WebConfigurationManager.AppSettings["SERVERADDR"];
+		public static string SERVERPORT = System.Web.Configuration.WebConfigurationManager.AppSettings["SERVERPORT"];
+		public static string CLIENTPORT = System.Web.Configuration.WebConfigurationManager.AppSettings["CLIENTPORT"];
 		
 		public static string KEEPRUN_FILE = Path.GetDirectoryName(PROCPATH) + @"\MKEEPRUN.tmp";
 		public const string PROCSTR_FILE = @"\MPROCSTR.tmp";
@@ -623,7 +628,8 @@ namespace ASPMCServer
 				myProcess.StartInfo.CreateNoWindow = true;
 				myProcess.StartInfo.Arguments = PROCNAME + " " + PROCPATH + " " +  PIPEMSGTAG + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
-					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH;
+					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH + ((SERVERPORT != "0" && CLIENTPORT != "0") ? 
+					                                                              (" " + CLIENTNAME + " " + SERVERADDR + " " + SERVERPORT + " " + CLIENTPORT) : "");
 				myProcess.Start();
 				myProcess.WaitForExit();
 				myProcess.Close();
@@ -671,7 +677,8 @@ namespace ASPMCServer
 			return "尝试开服，请使用log查看信息"
 				+ "<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " + PIPEMSGTAG + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
-					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH;
+					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH + ((SERVERPORT != "0" && CLIENTPORT != "0") ? 
+					                                                              (" " + CLIENTNAME + " " + SERVERADDR + " " + SERVERPORT + " " + CLIENTPORT) : "");
 		}
 		
 		/// <summary>

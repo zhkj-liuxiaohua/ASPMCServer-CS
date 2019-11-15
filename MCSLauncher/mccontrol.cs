@@ -11,10 +11,12 @@ using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;					  
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.IO.MemoryMappedFiles;
+using MCSLauncher.net;
 
 namespace MCSLauncher
 {
@@ -44,7 +46,35 @@ namespace MCSLauncher
 //		public const string INPUT_TAG = "MINPUT_TAG";
 //		public const string INPUTFLAG_TAG = "MINPUTFLAG_TAG";
 		
-
+		// 跨服聊天相关
+		public static P2PLoader chatservice = null;
+		public static string myname = null;
+		public static int myport = 0;
+		public static string cserverip = null;
+		public static int cserverport = 0;
+		public static string chatkey = null;
+		
+		public const string CK_CMD = "CMD";
+		public const string CK_PORT = "PORT";
+		public const string CK_KEY = "KEY";
+		public const string CK_NAME = "NAME";
+		public const string CK_MSG = "MSG";
+		/// <summary>
+		/// 注册客户端
+		/// 格式：CMD=reg,PORT=client_port,KEY=client_key,NAME=client_name
+		/// </summary>
+		public const string CMD_REG = "reg";
+		/// <summary>
+		/// 注销客户端
+		/// 格式：CMD=unreg,KEY=client_key
+		/// </summary>
+		public const string CMD_UNREG = "unreg";
+		/// <summary>
+		/// 广播消息
+		/// 格式：CMD=msg,KEY=client_key,MSG=your_message
+		/// </summary>
+		public const string CMD_MSG = "msg";
+		
 		public const int INPUTCMD_END = 0;
 		public const int INPUTCMD_RUN = 1;
 		public const int INPUTCMD_SEND = 2;
@@ -502,9 +532,16 @@ namespace MCSLauncher
 				pipeIn.Disconnect();
 			}
 			// 监听服务结束时，结束正在运行的应用程序
+			if (chatservice != null) {
+				chatunregister();
+				chatservice.stopListen();
+				chatservice = null;
+			}
 			closeProc(procname);
+			
 		}
-		
+
+		// 输出信息接收记录服务
 		private static void OnDataReceived(object sender, DataReceivedEventArgs e)
 		{
 			string info = e.Data;
@@ -512,7 +549,13 @@ namespace MCSLauncher
 				return;
 			if (info[0] == '{') {
 				// 添加事件监听
-				eventAdd(info.Substring(1));
+				string ev = info.Substring(1);
+				eventAdd(ev);
+				if(chatservice != null) {
+					if (ev.IndexOf("Chat") > -1) {
+						chatSendFarMsg(ev);
+					}
+				}
 				return;
 			}
 			procstr = procstr + "<br>" + e.Data;
@@ -520,6 +563,7 @@ namespace MCSLauncher
 			//PROCSTR = procstr;
 			logAdd(e.Data);
 			checkBanlist(info);
+			checkChatPlayerPlays(info);
 		}
 
 		// 检查黑名单是否符合指定信息
@@ -587,6 +631,40 @@ namespace MCSLauncher
 			} catch {
 			}
 		}
+
+		// 发信玩家登入登出记录
+		private static void checkChatPlayerPlays(string info) {
+			if (chatservice == null) {
+				return;
+			}
+			int ci = info.IndexOf("Player connected");
+			if (ci > -1) {
+				// 解析连接数据
+				string[] pinfo = info.Substring(ci).Split(',');
+				if (pinfo.Length == 2) {
+					string[] pids = pinfo[0].Split(':');
+					string name = "";
+					if (pids.Length == 2) {
+						name = pids[1].Trim();
+						chatSendFarMsg("玩家 " + name + " 进入了游戏");
+					}
+				}
+				return;
+			}
+			ci = info.IndexOf("Player disconnected");
+			if (ci > -1) {
+				// 解析断开数据
+				string[] pinfo = info.Substring(ci).Split(',');
+				if (pinfo.Length == 2) {
+					string[] pids = pinfo[0].Split(':');
+					string name = "";
+					if (pids.Length == 2) {
+						name = pids[1].Trim();
+						chatSendFarMsg("玩家 " + name + " 退出了游戏");
+					}
+				}
+			}
+		}
 		
 		// 自动重启服务
 		private static void startProcThread()
@@ -625,6 +703,108 @@ namespace MCSLauncher
 			Process[] ps = Process.GetProcessesByName(pname);
 			return (ps != null && ps.Length > 0);
 		}
+
+		/// <summary>
+		/// 聊天消息接收器
+		/// </summary>
+		/// <param name="ipep"></param>
+		/// <param name="msg"></param>
+		private static void onChatMsgReceive(string ipep, string msg) {
+			string [] farmsgs = msg.Split(',');
+			if (farmsgs.Length > 1) {
+				string msgnode = msg.Substring(msg.IndexOf(',') + 1);
+				string [] para1 = farmsgs[0].Split('=');
+				string [] para2 = farmsgs[1].Split('=');
+				if (para1.Length > 1 && para2.Length > 1 && para1[0] == CK_KEY && para2[0] == CK_MSG) {
+					if (para1[1] == chatkey) {
+						sendCommand(procname, "me " + msgnode.Substring(msgnode.IndexOf('=') + 1));
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// 结束聊天回调
+		/// </summary>
+		private static void onChatStop() {
+			logAdd("聊天会话已结束。");
+		}
+		
+		/// <summary>
+		/// 注册此客户端到远程聊天服务器
+		/// </summary>
+		public static void chatregister() {
+			if (chatservice != null) {
+				chatkey = Guid.NewGuid().ToString();
+				chatservice.sendMsg(cserverip, cserverport, CK_CMD + "=" + CMD_REG + "," + CK_PORT + "=" + myport + "," + 
+				                    CK_KEY + "=" + chatkey + "," + CK_NAME + "=" + myname);
+			}
+		}
+		
+		/// <summary>
+		/// 结束聊天监听
+		/// </summary>
+		public static void chatunregister() {
+			if (chatservice != null) {
+				chatservice.sendMsg(cserverip, cserverport, CK_CMD + "=" + CMD_UNREG + "," + CK_KEY + "=" + chatkey);
+			}
+		}
+
+		/// <summary>
+		/// 发送远程聊天信息
+		/// </summary>
+		/// <param name="msg"></param>
+		public static void chatSendFarMsg(string msg) {
+			if (chatservice != null) {
+				chatservice.sendMsg(cserverip, cserverport, CK_CMD + "=" + CMD_MSG + "," + CK_KEY + "=" + chatkey + "," + CK_MSG + "=" + msg);
+			}
+		}
+		
+		/// <summary>
+		/// 通过域名取IP
+		/// </summary>
+		/// <param name="web">域名</param>
+		/// <returns>IP地址</returns>
+		public static string getIp(string web) {
+			IPHostEntry host = Dns.GetHostByName(web);
+			IPAddress ip = host.AddressList[0];
+			return ip.ToString();
+		}
+		
+		/// <summary>
+		/// 我要开服（含聊天端口）
+		/// </summary>
+		/// <param name="pname"></param>
+		/// <param name="fpath"></param>
+		/// <param name="ptag"></param>
+		/// <param name="pexe"></param>
+		/// <param name="pmoddir"></param>
+		/// <param name="logpath"></param>
+		/// <param name="eventpath"></param>
+		/// <param name="banlistpath"></param>
+		/// <param name="clientname"></param>
+		/// <param name="serveraddr"></param>
+		/// <param name="serverport"></param>
+		/// <param name="clientport"></param>
+		/// <returns></returns>
+		public static string StartProc(string pname, string fpath, string ptag, string pexe, string pmoddir, string logpath, string eventpath, string banlistpath,
+		                               string clientname, string serveraddr, string serverport, string clientport) {
+			if (clientname != null && serveraddr != null && serverport != null && clientport != null) {
+				myport = int.Parse(clientport);
+				if (myport != 0) {
+					chatservice = new P2PLoader(int.Parse(clientport));
+					myname = clientname;
+					cserverip = getIp(serveraddr);
+					cserverport = int.Parse(serverport);
+					chatservice.setOnReceiveMsg(onChatMsgReceive);
+					chatservice.setOnStopListen(onChatStop);
+					chatservice.startListen();
+					chatregister();
+				}
+			}
+			return StartProc(pname, fpath, ptag, pexe, pmoddir, logpath, eventpath, banlistpath);
+		}
+		
 		/// <summary>
 		/// 我要开服
 		/// </summary>

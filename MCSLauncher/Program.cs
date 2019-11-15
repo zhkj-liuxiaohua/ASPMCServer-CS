@@ -23,6 +23,7 @@ namespace MCSLauncher
 		private static void Main(string[] args)
 		{
 			string pname = null, ppath = null, ptag = null, pexe = null, pmoddir = null, logpath = null, eventpath = null, banlistpath = null;
+			string clientname = null, serveraddr = null, serverport = null, clientport = null;
 			if (args.Length > 7) {
 				pname = args[0];
 				ppath = args[1];
@@ -32,9 +33,15 @@ namespace MCSLauncher
 				logpath = args[5];
 				eventpath = args[6];
 				banlistpath = args[7];
+				if (args.Length > 11) {
+					clientname = args[8];
+					serveraddr = args[9];
+					serverport = args[10];
+					clientport = args[11];
+				}
 			}
 			if (!String.IsNullOrEmpty(pname) && !String.IsNullOrEmpty(ppath) && !String.IsNullOrEmpty(logpath))
-				mccontrol.StartProc(pname, ppath, ptag, pexe, pmoddir, logpath, eventpath, banlistpath);
+				mccontrol.StartProc(pname, ppath, ptag, pexe, pmoddir, logpath, eventpath, banlistpath, clientname, serveraddr, serverport, clientport);
 		}
 	}
 }
