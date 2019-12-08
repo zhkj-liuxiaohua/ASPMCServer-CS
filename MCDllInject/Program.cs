@@ -169,7 +169,7 @@ namespace MCDllInject
 					Console.WriteLine("VirtualAllocEx ERROR");
 					return false;
 				}
-				byte[] bytes = Encoding.ASCII.GetBytes(sDllPath);
+				byte[] bytes = Encoding.Default.GetBytes(sDllPath);
 				if (WriteProcessMemory(hndProc, lpAddress, bytes, (uint)bytes.Length, 0) == 0)
 				{
 					Console.WriteLine("WriteProcessMemory ERROR");
