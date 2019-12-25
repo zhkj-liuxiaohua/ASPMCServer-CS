@@ -932,7 +932,10 @@ namespace MCSLauncher
 		public static void eventAdd(string s)
 		{
 			mutex.WaitOne();
-			File.AppendAllLines(event_file_path, new string[]{ s });	// 逐行存储，不设限制，通过计划任务进行每日日志调度
+			try {
+				File.AppendAllLines(event_file_path, new string[]{ s });	// 逐行存储，不设限制，通过计划任务进行每日日志调度
+			} catch{
+			}
 			mutex.ReleaseMutex();
 		}
 	}
