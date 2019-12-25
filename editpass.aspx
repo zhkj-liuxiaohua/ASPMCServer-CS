@@ -2,7 +2,6 @@
 <%@ Page
 	Language           = "C#"
 	AutoEventWireup    = "false"
-	CodeFile           = "editpass.aspx.cs"
 	Inherits           = "ASPMCServer.editpass"
 	ValidateRequest    = "false"
 	EnableSessionState = "false"

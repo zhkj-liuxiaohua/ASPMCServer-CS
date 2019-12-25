@@ -17,15 +17,15 @@ namespace ASPMCServer
 	/// <summary>
 	/// Description of MainForm.
 	/// </summary>
-	public partial class Default : Page
+	public class Default : Page
 	{	
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Data
 
-//		protected HtmlInputText fname;
-//		protected HtmlInputPassword fpass;
-//		protected	HtmlInputButton		submit1;
-//		protected HtmlGenericControl msg;
+		protected HtmlInputText fname;
+		protected HtmlInputPassword fpass;
+		protected HtmlInputButton submit1;
+		protected HtmlGenericControl msg;
 		
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

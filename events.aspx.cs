@@ -23,12 +23,12 @@ namespace ASPMCServer
 	/// <summary>
 	/// Description of event
 	/// </summary>
-	public partial class Events : Page
+	public class Events : Page
 	{	
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Data
 
-//		protected HtmlGenericControl msg;
+		protected HtmlGenericControl msg;
 		
 		public static string EVENT_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["EVENTPATH"];
 		

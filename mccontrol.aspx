@@ -1,7 +1,6 @@
 ﻿<!DOCTYPE html>
 <%@ Page Language="C#"
 	AutoEventWireup    = "false"
-	CodeFile           = "mccontrol.aspx.cs"
 	Inherits           = "ASPMCServer.mccontrol"
 	ValidateRequest    = "false"
 	EnableSessionState = "true"

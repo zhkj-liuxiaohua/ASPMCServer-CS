@@ -60,6 +60,9 @@
     <Compile Include="events.aspx.cs">
       <DependentUpon>events.aspx</DependentUpon>
     </Compile>
+    <Compile Include="farcmd.ashx.cs">
+      <DependentUpon>farcmd.ashx</DependentUpon>
+    </Compile>
     <Compile Include="mccontrol.aspx.cs">
       <DependentUpon>mccontrol.aspx</DependentUpon>
     </Compile>
@@ -68,6 +71,7 @@
     <None Include="Default.aspx" />
     <None Include="editpass.aspx" />
     <None Include="events.aspx" />
+    <None Include="farcmd.ashx" />
     <None Include="mccontrol.aspx" />
     <None Include="unlogin.html" />
     <None Include="Web.config" />

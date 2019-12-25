@@ -17,15 +17,15 @@ namespace ASPMCServer
 	/// <summary>
 	/// Description of editpass
 	/// </summary>
-	public partial class editpass : Page
+	public class editpass : Page
 	{	
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Data
 
-//		protected	HtmlInputButton		submit;
-//		protected	HtmlInputText		username;
-//		protected HtmlInputPassword oldpass, newpass, newpass2;
-//		protected HtmlGenericControl msg;
+		protected HtmlInputButton submit;
+		protected HtmlInputText username;
+		protected HtmlInputPassword oldpass, newpass, newpass2;
+		protected HtmlGenericControl msg;
 		
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

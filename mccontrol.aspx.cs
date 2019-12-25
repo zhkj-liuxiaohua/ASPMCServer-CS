@@ -24,15 +24,16 @@ namespace ASPMCServer
 	/// <summary>
 	/// Description of mccontrol
 	/// </summary>
-	public partial class mccontrol : Page
+	public class mccontrol : Page
 	{
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region 预定义按钮处，此处不用开放
 
-//		protected	HtmlInputButton		logout, showbackup, clearbackup, cpmap;
-//		protected Button btwhite, btblack, btban, btunban, showmc, showlog, /*showevent,*/ btcmd, shutdown, StartServer;
-//		protected	TextBox		whitetext, blacktext, bantext, unbantext, cmdtext;
-//		protected HtmlGenericControl msg, welcome;
+		protected HtmlInputButton logout, showbackup, clearbackup, cpmap;
+		protected Button btwhite, btblack, btban, btunban, showmc, showlog, /*showevent,*/ btcmd, shutdown, StartServer;
+		protected TextBox whitetext, blacktext, bantext, unbantext, cmdtext;
+		protected HtmlGenericControl msg;
+		protected HtmlAnchor welcome;
 		
 		public string BACKUPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["BACKUPDIR"];
 		public string MAPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["MAPDIR"];

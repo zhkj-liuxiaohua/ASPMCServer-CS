@@ -1,7 +1,6 @@
 ﻿<%@ Page
 	Language           = "C#"
 	AutoEventWireup    = "false"
-	CodeFile           = "Default.aspx.cs"
 	Inherits           = "ASPMCServer.Default"
 	ValidateRequest    = "false"
 	EnableSessionState = "true"

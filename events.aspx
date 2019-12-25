@@ -2,7 +2,6 @@
 <%@ Page
 	Language           = "C#"
 	AutoEventWireup    = "false"
-	CodeFile           = "events.aspx.cs"
 	Inherits           = "ASPMCServer.Events"
 	ValidateRequest    = "false"
 	EnableSessionState = "true"
