@@ -710,6 +710,8 @@ namespace MCSLauncher
 		/// <param name="ipep"></param>
 		/// <param name="msg"></param>
 		private static void onChatMsgReceive(string ipep, string msg) {
+			if (msg.IndexOf('\n') > -1)
+				msg = msg.Split('\n')[0];
 			string [] farmsgs = msg.Split(',');
 			if (farmsgs.Length > 1) {
 				string msgnode = msg.Substring(msg.IndexOf(',') + 1);
