@@ -685,6 +685,7 @@ namespace MCSLauncher
 				myProcess.StartInfo.CreateNoWindow = true;
 				myProcess.StartInfo.StandardOutputEncoding = Encoding.UTF8;
 				myProcess.OutputDataReceived += OnDataReceived;
+				myProcess.StartInfo.WorkingDirectory = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
 				myProcess.Start();
 				myProcess.BeginOutputReadLine();
 				myProcess.WaitForExit();
