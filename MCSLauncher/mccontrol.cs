@@ -464,15 +464,15 @@ namespace MCSLauncher
 			if (linecount < 1) {
 				return mystr;
 			}
-			string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
+			string[] strs = mystr.Split(new string [] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
 			if (strs.Length < linecount) {
 				return mystr;
 			}
 			mystr = "";
 			for (int i = strs.Length - linecount; i < strs.Length; i++) {
-				mystr += ("<br>" + strs[i]);
+				mystr += ("\n" + strs[i]);
 			}
-			return mystr.Substring(mystr.IndexOf("<br>") + 4);
+			return mystr.Substring(mystr.IndexOf("\n") + 4);
 		}
 
 		/// <summary>
@@ -558,7 +558,7 @@ namespace MCSLauncher
 				}
 				return;
 			}
-			procstr = procstr + "<br>" + e.Data;
+			procstr = procstr + "\n" + e.Data;
 			procstr = FormatStrAsLine(procstr, 2000); // 最多保留2000行log文本
 			//PROCSTR = procstr;
 			logAdd(e.Data);
@@ -902,13 +902,13 @@ namespace MCSLauncher
 			if (linecount < 1) {
 				return mystr;
 			}
-			string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
+			string[] strs = mystr.Split(new string [] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
 			if (strs.Length < linecount) {
 				return mystr;
 			}
 			mystr = strs[0];
 			for (int i = 1; i < linecount; i++) {
-				mystr += ("<br>" + strs[i]);
+				mystr += ("\n" + strs[i]);
 			}
 			return mystr;
 		}
@@ -922,7 +922,7 @@ namespace MCSLauncher
 		{
 			mutex.WaitOne();
 			string slog = LOG_FILE_INFO;
-			slog = s + "<br>" + slog;			// 逆序存储所有log文本
+			slog = s + "\n" + slog;			// 逆序存储所有log文本
 			slog = FormatStrAsLineResc(slog, 2000); // 最多保留2000行log文本
 			LOG_FILE_INFO = slog;
 			mutex.ReleaseMutex();

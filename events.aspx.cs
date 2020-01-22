@@ -28,7 +28,7 @@ namespace ASPMCServer
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Data
 
-		protected HtmlGenericControl msg;
+		protected HtmlTextArea msg;
 		
 		public static string EVENT_FILE_PATH = System.Web.Configuration.WebConfigurationManager.AppSettings["EVENTPATH"];
 		
@@ -67,7 +67,7 @@ namespace ASPMCServer
 				str = File.ReadAllText(EVENT_FILE_PATH);
 			}catch{
 			}
-			msg.InnerHtml = str;
+			msg.Value = str;
 		}
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

@@ -32,7 +32,7 @@ namespace ASPMCServer
 		protected HtmlInputButton logout, showbackup, clearbackup, cpmap;
 		protected Button btwhite, btblack, btban, btunban, showmc, showlog, /*showevent,*/ btcmd, shutdown, StartServer;
 		protected TextBox whitetext, blacktext, bantext, unbantext, cmdtext;
-		protected HtmlGenericControl msg;
+		protected HtmlTextArea msg;
 		protected HtmlAnchor welcome;
 		
 		public string BACKUPDIR = System.Web.Configuration.WebConfigurationManager.AppSettings["BACKUPDIR"];
@@ -146,9 +146,9 @@ namespace ASPMCServer
 		}
 		
 		private void secAddTxt(string s) {
-			string	mt = msg.InnerHtml;
-			mt += ("<br>" + s);
-			msg.InnerHtml = MCWinControl.FormatStrAsLine(mt, 20);
+			string	mt = msg.Value;
+			mt += ("\n" + s);
+			msg.Value = MCWinControl.FormatStrAsLine(mt, 20);
 		}
 		// 显示后台
 		void ShowmcClick(object sender, EventArgs e)
@@ -157,7 +157,7 @@ namespace ASPMCServer
 		}
 		// 显示往期log
 		void ShowlogClick(object sender, EventArgs e) {
-			msg.InnerHtml = MCWinControl.LOG_FILE_INFO;
+			msg.Value = MCWinControl.LOG_FILE_INFO;
 		}
 		// 关服
 		void ShutdownClick(object sender, EventArgs e)
@@ -602,15 +602,15 @@ namespace ASPMCServer
 			if (linecount < 1) {
 				return mystr;
 			}
-			string[] strs = mystr.Split(new string [] { "<br>" }, StringSplitOptions.RemoveEmptyEntries);
+			string[] strs = mystr.Split(new string [] { "\n" }, StringSplitOptions.RemoveEmptyEntries);
 			if (strs.Length < linecount) {
 				return mystr;
 			}
 			mystr = "";
 			for (int i = strs.Length - linecount; i < strs.Length; i++) {
-				mystr += ("<br>" + strs[i]);
+				mystr += ("\n" + strs[i]);
 			}
-			return mystr.Substring(mystr.IndexOf("<br>") + 4);
+			return mystr.Substring(mystr.IndexOf("\n") + 1);
 		}
 
 		// 自动重启服务
@@ -676,7 +676,7 @@ namespace ASPMCServer
 			Thread tproc = new Thread(startProcThread);
 			tproc.Start();
 			return "尝试开服，请使用log查看信息"
-				+ "<br>" + "参数：" + PROCNAME + " " + PROCPATH + " " + PIPEMSGTAG + " " +
+				+ "\n" + "参数：" + PROCNAME + " " + PROCPATH + " " + PIPEMSGTAG + " " +
 					PEXEPATH + " " + PDLLDIR + " " +
 					LOG_FILE_PATH + " " + EVENT_FILE_PATH + " " + BANLIST_PATH + ((SERVERPORT != "0" && CLIENTPORT != "0") ? 
 					                                                              (" " + CLIENTNAME + " " + SERVERADDR + " " + SERVERPORT + " " + CLIENTPORT) : "");
