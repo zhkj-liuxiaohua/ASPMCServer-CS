@@ -23,6 +23,8 @@ namespace EventSearch
 		public delegate void OnInitFinish();
 		public OnInitFinish f;
 		
+		public Hashtable oldPoint;
+		
 		public EData()
 		{
 		}
@@ -42,6 +44,7 @@ namespace EventSearch
 		public void init(string dir) {
 			datas = new ArrayList();
 			events = new ArrayList();
+			oldPoint = new Hashtable();
 			string [] txts = null;
 			try {
 				txts = Directory.GetFiles(dir, "*.txt");
@@ -91,6 +94,7 @@ namespace EventSearch
 				nextNode = d.Substring(i);
                 int pnodeNums = 0;
 				string [] pinfos = nextNode.Split(' ');
+				bool oped = false, closed = false;
 				if (pinfos.Length > 0) {
 					if (pinfos[0] == "玩家") {
                         ev.player = "";
@@ -108,6 +112,8 @@ namespace EventSearch
 						string [] opi = pinfos[pnodeNums + 1].Split(new String [] {"在"}, StringSplitOptions.RemoveEmptyEntries);
 						if (opi.Length > 1) {
 							ev.dimension = opi[1];
+							oped = opi[0].Equals("开启");
+							closed = opi[0].Equals("关闭");
 						}
 					}
 				}
@@ -121,6 +127,22 @@ namespace EventSearch
 							ev.x = int.Parse(ps[0]);
 							ev.y = int.Parse(ps[1]);
 							ev.z = int.Parse(ps[2]);
+							if (oped) {
+								oldPoint[ev.player] = new P3D(ev.x, ev.y, ev.z);
+							}
+							if (closed) {
+								oldPoint[ev.player] = null;
+							}
+						}
+					}
+				} else {
+					if (!string.IsNullOrEmpty(ev.player)) {
+						Object ooldp = oldPoint[ev.player];
+						if (null != ooldp) {
+							P3D oldp = (P3D) ooldp;
+							ev.x = oldp.x;
+							ev.y = oldp.y;
+							ev.z = oldp.z;
 						}
 					}
 				}
@@ -187,7 +209,6 @@ namespace EventSearch
 		}
 	}
 	
-	
 	public class MGEvent {
 		public int tindex;
 		public DateTime dt;
@@ -200,5 +221,15 @@ namespace EventSearch
 		public int z;
 	}
 	
+	public struct P3D {
+		public int x;
+		public int y;
+		public int z;
+		public P3D(int x, int y, int z){
+			this.x = x;
+			this.y = y;
+			this.z = z;
+		}
+	}
 	
 }
