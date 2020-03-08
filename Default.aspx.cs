@@ -9,6 +9,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 
@@ -18,7 +19,11 @@ namespace ASPMCServer
 	/// Description of MainForm.
 	/// </summary>
 	public class Default : Page
-	{	
+	{
+		static string BANLOGINLIST = System.Web.Configuration.WebConfigurationManager.AppSettings["BANLOGINLIST"];
+		static string LOGIN_LOGS = System.Web.Configuration.WebConfigurationManager.AppSettings["LOGIN_LOGS"];
+		static string DATA_DIR = System.Web.Configuration.WebConfigurationManager.AppSettings["DATA_DIR"];
+
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#region Data
 
@@ -70,7 +75,11 @@ namespace ASPMCServer
 		//----------------------------------------------------------------------
 		protected void Click_Button_Ok(object sender, EventArgs e)
 		{
-			string DATA_DIR = System.Web.Configuration.WebConfigurationManager.AppSettings["DATA_DIR"];
+			string ip = HttpContext.Current.Request.UserHostAddress;
+			if (LoginCheck.checkIsBan(BANLOGINLIST, ip)) {
+				showTips("当日访问已受限。详情咨询管理员。");
+				return;
+			}
 			if (fname.Value == null || fname.Value.Equals("")) {
 				showTips("账号密码不能为空");
 				return;
@@ -83,13 +92,18 @@ namespace ASPMCServer
 			String p = File.ReadAllText(fi);
 			p = decode(p);
 			if (!p.Equals(fpass.Value)) {
-				showTips("用户名或密码错误");
+				LoginCheck.failOne(BANLOGINLIST, ip);
+				showTips("用户名或密码错误。您的剩余试错次数为" + (5 - LoginCheck.getFailTimes(BANLOGINLIST, ip)) +
+				         "次。");
+				LoginCheck.addLoginLog(LOGIN_LOGS, "[fail] USER=" + fname.Value + ",IP=" + ip + ",TIME=" + DateTime.Now);
 				return;
 			}
 			// 此处执行跳转
 			Session.Add("user", fname.Value);
 			Session.Add("password", fpass.Value);
 			Session.Add("flag", "通过");
+			LoginCheck.clear(BANLOGINLIST, ip);
+			LoginCheck.addLoginLog(LOGIN_LOGS, "[success] USER=" + fname.Value + ",IP=" + ip + ",TIME=" + DateTime.Now);
 			base.Response.Redirect("mccontrol.aspx", true);
 		}
 

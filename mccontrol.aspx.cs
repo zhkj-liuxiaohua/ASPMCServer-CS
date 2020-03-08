@@ -15,6 +15,7 @@ using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Web.UI.HtmlControls;
@@ -71,7 +72,7 @@ namespace ASPMCServer
 			if (!sessionCheck()) {
 				base.Response.Redirect("unlogin.html", true);
 			}
-			welcome.InnerHtml = "欢迎用户 " + Session["user"] + " 使用本系统！";
+			welcome.InnerHtml = "欢迎用户 " + Session["user"] + " 使用本系统！[IP]" + HttpContext.Current.Request.UserHostAddress;
 		}
 		#endregion
 		//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

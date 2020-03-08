@@ -63,6 +63,7 @@
     <Compile Include="farcmd.ashx.cs">
       <DependentUpon>farcmd.ashx</DependentUpon>
     </Compile>
+    <Compile Include="LoginCheck.cs" />
     <Compile Include="mccontrol.aspx.cs">
       <DependentUpon>mccontrol.aspx</DependentUpon>
     </Compile>
