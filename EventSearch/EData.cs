@@ -77,12 +77,14 @@ namespace EventSearch
             ev.z = int.MaxValue;
 			int i = d.IndexOf('[');
 			int j = d.IndexOf(']');
-			if (i > -1) {
+			if (i == 0) {
 				if (j > i) {
 					string dandt = d.Substring(i + 1, j - i - 1);
 					string [] dtt = dandt.Split(' ');
 					if (dtt.Length == 3) {
-						ev.dt = DateTime.Parse(dtt[0] + " " + dtt[1]);
+						try {
+							ev.dt = DateTime.Parse(dtt[0] + " " + dtt[1]);
+						}catch{}
 						ev.title = dtt[2];
 					}
 				}
