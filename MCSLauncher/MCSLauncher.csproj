@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="mccontrol.cs" />
+    <Compile Include="mccontrolJ.cs" />
     <Compile Include="Net\P2PLoader.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
