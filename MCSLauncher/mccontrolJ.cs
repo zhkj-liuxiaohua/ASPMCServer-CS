@@ -591,38 +591,35 @@ namespace MCSLauncher
 		// 检查黑名单是否符合指定信息
 		private static void checkBanlist(string info)
 		{
-			int ci = info.IndexOf("Player connected");
+			int ci = info.IndexOf("logged in with entity id");
 			if (ci > -1) {
 				// 解析连接数据
-				string[] pinfo = info.Substring(ci).Split(',');
-				if (pinfo.Length == 2) {
-					string[] pids = pinfo[0].Split(':');
-					string[] puids = pinfo[1].Split(':');
-					string name = "", xuid = "";
-					if (pids.Length == 2) {
-						name = pids[1].Trim();
-					}
-					if (pinfo.Length == 2) {
-						xuid = puids[1].Trim();
-					}
-					// 判断是否存在于黑名单中，并顺便补充完善黑名单xuid
+				int nstart = info.IndexOf("INFO]: ");
+				string nandip = info.Substring(nstart + 7, ci - nstart);
+				int nend = nandip.IndexOf('[');
+				int ipstart = nandip.IndexOf('/');
+				int ipend = nandip.IndexOf(':');
+				if (nend > -1 && ipstart > -1 && ipend > -1) {
+					string name = nandip.Substring(0, nend);
+					string ip = nandip.Substring(ipstart + 1, ipend - ipstart - 1);
+					// 判断是否存在于黑名单中，并顺便补充完善黑名单ip
 					int i = 0, l = 0;
 					for (l = banliststr.Length; i < l; i++) {
 						string[] binfo = banliststr[i].Split(',');
-						string bname = "", bxuid = "";
+						string bname = "", bip = "";
 						if (binfo.Length > 0) {
 							bname = binfo[0];
 						}
 						if (binfo.Length > 1) {
-							bxuid = binfo[1];
+							bip = binfo[1];
 						}
-						if (bname == name || bxuid == xuid)
+						if (bname == name || bip == ip)
 							break;
 					}
 					if (i < l) {
 						// 发现存在于黑名单中
 						if (banliststr[i].Split(',').Length < 2) {
-							banliststr[i] += ("," + xuid);
+							banliststr[i] += ("," + ip);
 							updateBanlist();
 						}
 						new Thread(delegate(){
