@@ -555,6 +555,9 @@ namespace MCSLauncher
 					if (ev.IndexOf("Chat") > -1) {
 						chatSendFarMsg(ev);
 					}
+                                        else if (ev.IndexOf("DeathInfo") > -1) {
+						chatSendFarDeathMsg(ev);
+					}     
 				}
 				return;
 			}
@@ -758,6 +761,11 @@ namespace MCSLauncher
 		/// </summary>
 		/// <param name="msg"></param>
 		public static void chatSendFarMsg(string msg) {
+			if (chatservice != null) {
+				chatservice.sendMsg(cserverip, cserverport, CK_CMD + "=" + CMD_MSG + "," + CK_KEY + "=" + chatkey + "," + CK_MSG + "=" + msg);
+			}
+		}
+                public static void chatSendFarDeathMsg(string msg) {
 			if (chatservice != null) {
 				chatservice.sendMsg(cserverip, cserverport, CK_CMD + "=" + CMD_MSG + "," + CK_KEY + "=" + chatkey + "," + CK_MSG + "=" + msg);
 			}
