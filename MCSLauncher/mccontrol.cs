@@ -769,7 +769,7 @@ namespace MCSLauncher
 		/// <param name="web">域名</param>
 		/// <returns>IP地址</returns>
 		public static string getIp(string web) {
-			IPHostEntry host = Dns.GetHostByName(web);
+			IPHostEntry host = Dns.GetHostEntry(web);
 			IPAddress ip = host.AddressList[0];
 			return ip.ToString();
 		}

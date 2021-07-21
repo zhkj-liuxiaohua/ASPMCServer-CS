@@ -84,7 +84,11 @@ namespace MCSLauncher.net
 		public void sendMsg(string ip, int port, string msg) {
 			byte [] data = System.Text.Encoding.Default.GetBytes(msg);
 			EndPoint Remote = new IPEndPoint(IPAddress.Parse(ip), port);
-			socket.SendTo(data, data.Length, SocketFlags.None, Remote);
+			try {
+				socket.SendTo(data, data.Length, SocketFlags.None, Remote);
+			} catch(SocketException) {
+				// do nothing
+			}
 		}
 		
 		/// <summary>
