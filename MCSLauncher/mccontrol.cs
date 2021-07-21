@@ -695,8 +695,8 @@ namespace MCSLauncher
 				//PROCSTR = "log end";
 				keeprun = KEEPRUN;
 				if (keeprun)
-					for (int i = 0; i < 10 && KEEPRUN; i++)
-						Thread.Sleep(1000);	// 自动重启时限：10s
+					for (int i = 0; i < 60 && KEEPRUN; i++)
+						Thread.Sleep(1000);	// 自动重启时限：60s
 			}
 		}
 		private static bool findedProcName(string pname)
@@ -769,7 +769,7 @@ namespace MCSLauncher
 		/// <param name="web">域名</param>
 		/// <returns>IP地址</returns>
 		public static string getIp(string web) {
-			IPHostEntry host = Dns.GetHostEntry(web);
+			IPHostEntry host = Dns.GetHostByName(web);
 			IPAddress ip = host.AddressList[0];
 			return ip.ToString();
 		}
